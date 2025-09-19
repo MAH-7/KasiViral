@@ -9,6 +9,7 @@ import { Desktop } from "@/pages/Desktop";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import TermsOfService from "@/pages/TermsOfService";
+import Billing from "@/pages/Billing";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Desktop} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/billing" component={Billing} />
       <Route path="/terms" component={TermsOfService} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -3,6 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "wouter";
 
 export const PricingSection = (): JSX.Element => {
   const features = [
@@ -62,9 +63,10 @@ export const PricingSection = (): JSX.Element => {
 
               <Button 
                 className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-lg py-3"
+                asChild
                 data-testid="button-pricing-get-started"
               >
-                Get Started Now
+                <Link href="/login">Get Started Now</Link>
               </Button>
             </CardContent>
           </Card>

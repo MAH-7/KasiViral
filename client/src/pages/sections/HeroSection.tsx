@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
+import { Link } from "wouter";
 
 const heroImages = [
   {
@@ -60,12 +61,15 @@ export const HeroSection = (): JSX.Element => {
             <Button
               size="lg"
               className="gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 group"
+              asChild
               data-testid="button-hero-get-started"
             >
-              <span className="flex items-center gap-2">
-                Get Started
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </span>
+              <Link href="/login">
+                <span className="flex items-center gap-2">
+                  Get Started
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
             </Button>
 
             <Button

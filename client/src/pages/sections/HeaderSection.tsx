@@ -78,7 +78,7 @@ export const HeaderSection = (): JSX.Element => {
               asChild
               data-testid="button-get-started"
             >
-              <Link href="/register">Get Started</Link>
+              <Link href="/login">Get Started</Link>
             </Button>
           </div>
 
@@ -130,7 +130,7 @@ export const HeaderSection = (): JSX.Element => {
                   asChild
                   data-testid="mobile-button-get-started"
                 >
-                  <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
                 </Button>
               </div>
             </div>
