@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,6 @@ import {
   Calendar, 
   CreditCard, 
   Settings as SettingsIcon, 
-  ArrowLeft,
   Save,
   Shield,
   Clock
@@ -57,27 +55,14 @@ export default function Settings(): JSX.Element {
 
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="flex items-center mb-8">
-            <Link href="/dashboard">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="mr-4 hover:bg-accent"
-                data-testid="button-back"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <SettingsIcon className="w-6 h-6 text-primary" />
-                Settings
-              </h1>
-              <p className="text-muted-foreground">
-                Manage your account and subscription preferences
-              </p>
-            </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <SettingsIcon className="w-6 h-6 text-primary" />
+              Settings
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your account and subscription preferences
+            </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
@@ -93,6 +78,32 @@ export default function Settings(): JSX.Element {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Current Account Info Display */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <User className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Full Name</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user?.name || 'No name provided'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Email Address</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user?.email || 'No email provided'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <form onSubmit={handleSaveProfile} className="space-y-6">
                   {/* First Name and Last Name Fields */}
                   <div className="grid grid-cols-2 gap-4">
@@ -154,7 +165,7 @@ export default function Settings(): JSX.Element {
                     data-testid="button-save-profile"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    Save Changes
+                    Update Profile
                   </Button>
                 </form>
               </CardContent>
@@ -172,7 +183,7 @@ export default function Settings(): JSX.Element {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Subscription Plan */}
+                {/* Current Plan with Status */}
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-primary" />
@@ -180,6 +191,13 @@ export default function Settings(): JSX.Element {
                       <p className="font-medium">Current Plan</p>
                       <p className="text-sm text-muted-foreground">{planName}</p>
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-medium ${
+                      planStatus === 'Active' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {planStatus}
+                    </p>
                   </div>
                 </div>
 
@@ -201,21 +219,6 @@ export default function Settings(): JSX.Element {
                     <div>
                       <p className="font-medium">Payment Method</p>
                       <p className="text-sm text-muted-foreground">{paymentMethod}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Plan Status */}
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Plan Status</p>
-                      <p className={`text-sm font-medium ${
-                        planStatus === 'Active' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {planStatus}
-                      </p>
                     </div>
                   </div>
                 </div>

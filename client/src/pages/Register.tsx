@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { HeaderSection } from "./sections/HeaderSection";
+import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Register(): JSX.Element {
@@ -18,19 +19,41 @@ export default function Register(): JSX.Element {
   const [lastName, setLastName] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToMarketing, setAgreeToMarketing] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [, navigate] = useLocation();
+  const { register } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement registration logic later
-    console.log("Registration attempted with:", { 
-      firstName, 
-      lastName, 
+    setError("");
+    
+    // Validation
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    if (!agreeToTerms) {
+      setError("Please agree to the Terms of Service and Privacy Policy");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    const result = await register({ 
       email, 
-      password, 
-      confirmPassword, 
-      agreeToTerms, 
-      agreeToMarketing 
+      name: `${firstName} ${lastName}`.trim(), 
+      password 
     });
+    
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setError(result.error || "Registration failed");
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -215,14 +238,22 @@ export default function Register(): JSX.Element {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-500 text-sm text-center bg-red-50 dark:bg-red-950/50 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105"
+                disabled={isLoading}
+                className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                 size="lg"
                 data-testid="button-register-submit"
               >
-                Create Account
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

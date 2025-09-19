@@ -12,24 +12,25 @@ export default function Login(): JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [, navigate] = useLocation();
   const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
     
-    // Mock login logic for UI testing - replace with real API call later
-    const mockUser = {
-      id: "1",
-      name: email.split("@")[0] || "User", // Use email username as name
-      email: email
-    };
+    const result = await login({ email, password });
     
-    // Simulate successful login
-    login(mockUser);
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setError(result.error || "Login failed");
+    }
     
-    // Redirect to dashboard
-    navigate("/dashboard");
+    setIsLoading(false);
   };
 
   return (
@@ -119,14 +120,22 @@ export default function Login(): JSX.Element {
                 </Button>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-500 text-sm text-center bg-red-50 dark:bg-red-950/50 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105"
+                disabled={isLoading}
+                className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                 size="lg"
                 data-testid="button-login-submit"
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
