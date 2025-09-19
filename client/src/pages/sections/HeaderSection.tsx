@@ -1,17 +1,26 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, HelpCircle, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const HeaderSection = (): JSX.Element => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
+  const { isLoggedIn, user, logout } = useAuth();
 
-  const navigationItems = [
+  // Different navigation items based on login state
+  const guestNavigationItems = [
     { label: "Features", href: "/#features", id: "features" },
     { label: "Pricing", href: "/#pricing", id: "pricing" },
     { label: "FAQ", href: "/#faq", id: "faq" },
   ];
+
+  const loggedInNavigationItems = [
+    { label: "Thread Writer", href: "/dashboard", id: "thread-writer" },
+  ];
+
+  const navigationItems = isLoggedIn ? loggedInNavigationItems : guestNavigationItems;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -19,14 +28,19 @@ export const HeaderSection = (): JSX.Element => {
 
   const handleSectionClick = (e: React.MouseEvent, sectionId: string) => {
     // If we're already on homepage, just smooth scroll
-    if (location === "/") {
+    if (location === "/" && !isLoggedIn) {
       e.preventDefault();
       const element = document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-    // Otherwise, let the Link component handle navigation to homepage
+    // Otherwise, let the Link component handle navigation
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
     setIsMobileMenuOpen(false);
   };
 
@@ -63,23 +77,62 @@ export const HeaderSection = (): JSX.Element => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="text-sm font-medium"
-              asChild
-              data-testid="button-login"
-            >
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button 
-              size="sm"
-              className="gradient-primary text-white hover:opacity-90 transition-opacity"
-              asChild
-              data-testid="button-get-started"
-            >
-              <Link href="/login">Get Started</Link>
-            </Button>
+            {isLoggedIn ? (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-sm font-medium"
+                  data-testid="button-help"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Help
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-sm font-medium flex items-center space-x-2"
+                    asChild
+                    data-testid="button-user-profile"
+                  >
+                    <Link href="/settings">
+                      <User className="w-4 h-4" />
+                      <span>{user?.name || 'User'}</span>
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-sm font-medium"
+                    onClick={handleLogout}
+                    data-testid="button-logout"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-sm font-medium"
+                  asChild
+                  data-testid="button-login"
+                >
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button 
+                  size="sm"
+                  className="gradient-primary text-white hover:opacity-90 transition-opacity"
+                  asChild
+                  data-testid="button-get-started"
+                >
+                  <Link href="/login">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -117,21 +170,55 @@ export const HeaderSection = (): JSX.Element => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 pt-4 px-3">
-                <Button 
-                  variant="ghost" 
-                  className="justify-start"
-                  asChild
-                  data-testid="mobile-button-login"
-                >
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
-                </Button>
-                <Button 
-                  className="gradient-primary text-white justify-start"
-                  asChild
-                  data-testid="mobile-button-get-started"
-                >
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
-                </Button>
+                {isLoggedIn ? (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start"
+                      data-testid="mobile-button-help"
+                    >
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Help
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start"
+                      asChild
+                      data-testid="mobile-button-user-profile"
+                    >
+                      <Link href="/settings" onClick={() => setIsMobileMenuOpen(false)}>
+                        <User className="w-4 h-4 mr-2" />
+                        {user?.name || 'User'}
+                      </Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={handleLogout}
+                      data-testid="mobile-button-logout"
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start"
+                      asChild
+                      data-testid="mobile-button-login"
+                    >
+                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                    </Button>
+                    <Button 
+                      className="gradient-primary text-white justify-start"
+                      asChild
+                      data-testid="mobile-button-get-started"
+                    >
+                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

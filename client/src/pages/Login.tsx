@@ -1,21 +1,35 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeaderSection } from "./sections/HeaderSection";
+import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Login(): JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [, navigate] = useLocation();
+  const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic later
-    console.log("Login attempted with:", { email, password });
+    
+    // Mock login logic for UI testing - replace with real API call later
+    const mockUser = {
+      id: "1",
+      name: email.split("@")[0] || "User", // Use email username as name
+      email: email
+    };
+    
+    // Simulate successful login
+    login(mockUser);
+    
+    // Redirect to dashboard
+    navigate("/dashboard");
   };
 
   return (
