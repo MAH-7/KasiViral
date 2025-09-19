@@ -21,7 +21,7 @@ export const CustomerTestimonialsSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="section-padding relative overflow-hidden" id="features">
+    <section className="section-padding relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>

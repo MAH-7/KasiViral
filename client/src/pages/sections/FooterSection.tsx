@@ -1,7 +1,8 @@
 import React from "react";
+import { Link } from "wouter";
 
 const footerLinks = [
-  { text: "Terms of Service", href: "#" },
+  { text: "Terms of Service", href: "/terms" },
   { text: "Privacy Policy", href: "#" },
 ];
 
@@ -21,14 +22,23 @@ export const FooterSection = (): JSX.Element => {
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             {footerLinks.map((link, index) => (
-              <a
-                key={index}
-                href={link.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                data-testid={`footer-link-${link.text.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                {link.text}
-              </a>
+              link.href === "#" ? (
+                <a
+                  key={index}
+                  href={link.href}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid={`footer-link-${link.text.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  {link.text}
+                </a>
+              ) : (
+                <Link key={index} href={link.href}>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        data-testid={`footer-link-${link.text.toLowerCase().replace(/\s+/g, '-')}`}>
+                    {link.text}
+                  </span>
+                </Link>
+              )
             ))}
           </div>
         </div>

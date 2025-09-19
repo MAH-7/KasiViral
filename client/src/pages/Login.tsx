@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HeaderSection } from "./sections/HeaderSection";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Login(): JSX.Element {
@@ -18,7 +19,9 @@ export default function Login(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
+      <HeaderSection />
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
@@ -26,20 +29,6 @@ export default function Login(): JSX.Element {
       </div>
 
       <div className="w-full max-w-md mx-auto p-6">
-        {/* Header with back button */}
-        <div className="mb-8 animate-fade-up">
-          <Link href="/">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-4 text-muted-foreground hover:text-foreground"
-              data-testid="button-back-home"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
 
         {/* Login Card */}
         <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl animate-fade-up" style={{ animationDelay: "0.1s" }}>
@@ -141,17 +130,20 @@ export default function Login(): JSX.Element {
 
             {/* Sign Up Link */}
             <div className="text-center">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105"
-                data-testid="button-sign-up"
-              >
-                Create Account
-              </Button>
+              <Link href="/register">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105"
+                  data-testid="button-sign-up"
+                >
+                  Create Account
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
