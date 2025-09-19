@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-padding {
+    @apply py-12 sm:py-16 lg:py-20;
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, #ca3146 0%, #964054 100%);
+  }
+  
+  .gradient-secondary {
+    background: linear-gradient(135deg, #ca3146 0%, #f5576c 100%);
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border border-white/20 dark:border-gray-700/30;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-red-600 via-red-500 to-pink-600 bg-clip-text text-transparent;
+  }
+}
+
+:root {
+  --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s var(--animation-delay, 0s) ease-out forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s var(--animation-delay, 0s) ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.8s var(--animation-delay, 0s) ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.8s var(--animation-delay, 0s) ease-out forwards;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-up,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-bounce-subtle,
+  .animate-float {
+    animation: none;
+  }
+  
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+  animation: var(--animate-spin);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes shimmer {
+  0%, 90%, to {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+  30%, 60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@layer base {
+  :root {
+    /* White #ffffff */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 14%;
+
+    --muted: 215 25% 95%;
+    --muted-foreground: 215 15% 40%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 14%;
+
+    --border: 215 25% 88%;
+    --input: 215 25% 88%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 14%;
+
+    /* Red #ca3146 */
+    --primary: 346 60% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 96%;
+    --secondary-foreground: 215 25% 14%;
+
+    --accent: 215 25% 94%;
+    --accent-foreground: 215 25% 14%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 346 60% 48%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark #21232d */
+    --background: 215 25% 14%;
+    --foreground: 0 0% 98%;
+
+    --muted: 215 25% 20%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 215 25% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --popover: 215 25% 16%;
+    --popover-foreground: 0 0% 98%;
+
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+
+    --card: 215 25% 16%;
+    --card-foreground: 0 0% 98%;
+
+    /* Red #ca3146 */
+    --primary: 346 60% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 346 60% 48%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  p {
+    @apply leading-7;
+  }
+}
