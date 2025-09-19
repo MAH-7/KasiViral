@@ -60,18 +60,12 @@ export const HeroSection = (): JSX.Element => {
             <Button
               size="lg"
               className="gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 group"
-              asChild
               data-testid="button-hero-get-started"
             >
-              <a
-                href="https://threadmaster.ai/app/"
-                rel="noopener noreferrer"
-                target="_blank"
-                className="flex items-center gap-2"
-              >
+              <span className="flex items-center gap-2">
                 Get Started
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
+              </span>
             </Button>
 
             <Button

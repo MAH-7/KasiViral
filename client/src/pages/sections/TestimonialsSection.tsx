@@ -23,34 +23,38 @@ export const TestimonialsSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="flex flex-col items-center justify-center gap-16 p-[120px] w-full">
-      <div className="flex flex-col items-center justify-center gap-12 px-16 py-12 w-full">
-        <div className="flex-col gap-4 flex items-start w-full">
-          <h2 className="flex items-center justify-center w-full mt-[-1.00px] [font-family:'Inter',Helvetica] font-bold text-black text-5xl text-center tracking-[-0.96px] leading-[57.6px]">
-            Why Creators Choose KasiViral
-          </h2>
+    <section className="section-padding relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }}></div>
+        <div className="absolute bottom-1/3 left-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
+      </div>
 
-          <p className="flex items-center justify-center w-full [font-family:'Inter',Helvetica] font-medium text-[#0000008c] text-xl text-center tracking-[-0.10px] leading-[29px]">
+      <div className="container-custom">
+        <div className="text-center mb-12 lg:mb-16 animate-fade-up">
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
+            Why Creators Choose <span className="text-gradient">KasiViral</span>
+          </h2>
+          <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
             Streamlined from idea to publish across all major social platforms.
           </p>
         </div>
 
-        <div className="w-[1040px] ml-[-51.00px] mr-[-51.00px] flex items-center justify-center gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
           {features.map((feature, index) => (
             <Card
               key={index}
-              className="min-w-[324px] h-44 flex-1 grow border-0 border-t border-solid border-[#00000026] rounded-none bg-transparent shadow-none"
+              className="bg-card/50 backdrop-blur border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 card-hover"
+              style={{ animationDelay: `${0.1 * index}s` }}
             >
-              <CardContent className="flex flex-col items-start gap-4 pt-6 pb-0 px-0 h-full">
-                <div className="w-full mt-[-1.00px] [font-family:'Inter',Helvetica] font-normal text-[#191919] text-2xl text-center tracking-[-0.48px] leading-6">
+              <CardContent className="p-6 sm:p-8 text-center space-y-4">
+                <div className="text-4xl sm:text-5xl mb-4 animate-bounce" style={{ animationDelay: `${0.2 * index}s` }}>
                   {feature.emoji}
                 </div>
-
-                <h3 className="w-full [font-family:'Inter',Helvetica] font-normal text-[#191919] text-2xl text-center tracking-[-0.48px] leading-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
                   {feature.title}
                 </h3>
-
-                <p className="flex items-center justify-center w-full [font-family:'Inter',Helvetica] font-medium text-[#0000008c] text-base text-center tracking-[-0.08px] leading-6">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
               </CardContent>

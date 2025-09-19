@@ -1,6 +1,7 @@
 import React from "react";
 import { ContentTextSection } from "./sections/ContentTextSection";
 import { CustomerTestimonialsSection } from "./sections/CustomerTestimonialsSection";
+import { FAQSection } from "./sections/FAQSection";
 import { FooterSection } from "./sections/FooterSection";
 import { HeaderSection } from "./sections/HeaderSection";
 import { HeroSection } from "./sections/HeroSection";
@@ -21,6 +22,7 @@ export const Desktop = (): JSX.Element => {
           <TestimonialWallSection />
         </div>
         <PricingSection />
+        <FAQSection />
       </main>
       <FooterSection />
     </div>

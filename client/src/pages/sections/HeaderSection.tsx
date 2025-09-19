@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
@@ -8,6 +9,7 @@ export const HeaderSection = (): JSX.Element => {
   const navigationItems = [
     { label: "Features", href: "#features" },
     { label: "Pricing", href: "#pricing" },
+    { label: "FAQ", href: "#faq" },
   ];
 
   const toggleMobileMenu = () => {
@@ -48,9 +50,10 @@ export const HeaderSection = (): JSX.Element => {
               variant="ghost" 
               size="sm"
               className="text-sm font-medium"
+              asChild
               data-testid="button-login"
             >
-              Login
+              <Link href="/login">Login</Link>
             </Button>
             <Button 
               size="sm"
@@ -99,9 +102,10 @@ export const HeaderSection = (): JSX.Element => {
                 <Button 
                   variant="ghost" 
                   className="justify-start"
+                  asChild
                   data-testid="mobile-button-login"
                 >
-                  Login
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
                 </Button>
                 <Button 
                   className="gradient-primary text-white justify-start"

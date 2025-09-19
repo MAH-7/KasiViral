@@ -21,38 +21,44 @@ export const CustomerTestimonialsSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="flex flex-col items-center justify-center gap-12 px-[120px] py-12 relative self-stretch w-full flex-[0_0_auto]">
-      <header className="flex-col gap-4 flex items-start relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative flex items-center justify-center self-stretch mt-[-1.00px] [font-family:'Inter',Helvetica] font-bold text-black text-5xl text-center tracking-[-0.96px] leading-[57.6px]">
-          Proven results
-        </h2>
+    <section className="section-padding relative overflow-hidden" id="features">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
+      </div>
 
-        <p className="relative flex items-center justify-center self-stretch [font-family:'Inter',Helvetica] font-medium text-[#0000008c] text-xl text-center tracking-[-0.10px] leading-[29px]">
-          Real metrics from our users
-        </p>
-      </header>
+      <div className="container-custom">
+        <div className="text-center mb-12 lg:mb-16 animate-fade-up">
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
+            <span className="text-gradient">Proven results</span>
+          </h2>
+          <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            Real metrics from our users
+          </p>
+        </div>
 
-      <div className="self-stretch w-full flex items-center justify-center gap-8 relative flex-[0_0_auto]">
-        {metrics.map((metric, index) => (
-          <Card
-            key={index}
-            className="flex flex-col min-w-[324px] items-start gap-4 pt-6 pb-0 px-0 relative flex-1 grow border-t [border-top-style:solid] border-[#00000026] bg-transparent shadow-none"
-          >
-            <CardContent className="p-0 w-full flex flex-col gap-4">
-              <div className="relative self-stretch mt-[-1.00px] [font-family:'Inter',Helvetica] font-normal text-[#191919] text-2xl text-center tracking-[-0.48px] leading-6">
-                {metric.value}
-              </div>
-
-              <div className="relative self-stretch [font-family:'Inter',Helvetica] font-normal text-[#191919] text-2xl text-center tracking-[-0.48px] leading-6">
-                {metric.title}
-              </div>
-
-              <div className="relative flex items-center justify-center self-stretch [font-family:'Inter',Helvetica] font-medium text-[#0000008c] text-base text-center tracking-[-0.08px] leading-6">
-                {metric.description}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+          {metrics.map((metric, index) => (
+            <Card
+              key={index}
+              className="gradient-primary border-0 shadow-2xl card-hover transition-all duration-300 hover:scale-105"
+              style={{ animationDelay: `${0.1 * index}s` }}
+            >
+              <CardContent className="p-6 sm:p-8 text-center space-y-4">
+                <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-2">
+                  {metric.value}
+                </div>
+                <div className="text-xl sm:text-2xl font-semibold text-white/90 mb-2">
+                  {metric.title}
+                </div>
+                <div className="text-sm sm:text-base text-white/80 leading-relaxed">
+                  {metric.description}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </section>
   );
