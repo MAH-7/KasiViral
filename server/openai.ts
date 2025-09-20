@@ -16,6 +16,60 @@ export interface ThreadGenerationRequest {
   length: 'short' | 'medium' | 'long';
 }
 
+// Personality modes for dynamic thread generation
+interface PersonalityMode {
+  name: string;
+  english: {
+    persona: string;
+    style: string;
+    approach: string;
+  };
+  bahasa: {
+    persona: string;
+    style: string;
+    approach: string;
+  };
+}
+
+interface TemplateStructure {
+  name: string;
+  english: {
+    structure: string;
+    hooks: string[];
+    transitions: string[];
+  };
+  bahasa: {
+    structure: string;
+    hooks: string[];
+    transitions: string[];
+  };
+}
+
+interface RandomElements {
+  emojiStyle: string;
+  numberingStyle: string;
+  toneVariation: string;
+}
+
+interface DynamicSystemPromptParams {
+  persona: { persona: string; style: string; approach: string };
+  template: { structure: string; hooks: string[]; transitions: string[] };
+  style: string;
+  randomElements: RandomElements;
+  spec: any;
+  length: string;
+  language: string;
+}
+
+interface DynamicUserPromptParams {
+  topic: string;
+  spec: any;
+  personality: string;
+  template: string;
+  style: string;
+  language: string;
+}
+
 export interface ThreadResponse {
   thread: string;
   wordCount: number;
@@ -43,6 +97,239 @@ function countTweets(text: string): number {
   return matches ? matches.length : 1; // At least 1 tweet if no numbered pattern found
 }
 
+// Dynamic personality modes for variety
+const PERSONALITY_MODES: PersonalityMode[] = [
+  {
+    name: "Educator",
+    english: {
+      persona: "You are a knowledgeable teacher who breaks down complex topics into digestible lessons",
+      style: "Educational, step-by-step explanations with examples",
+      approach: "Start with basics, build up complexity, include practical examples and exercises"
+    },
+    bahasa: {
+      persona: "Awak adalah seorang pendidik yang pandai memecahkan topik kompleks kepada pembelajaran mudah",
+      style: "Pendidikan, penjelasan langkah demi langkah dengan contoh",
+      approach: "Mulakan dengan asas, tambah kerumitan, sertakan contoh praktikal dan latihan"
+    }
+  },
+  {
+    name: "Entrepreneur",
+    english: {
+      persona: "You are a successful entrepreneur sharing battle-tested business insights",
+      style: "Practical, results-oriented with real case studies and actionable advice",
+      approach: "Focus on ROI, share failures and wins, give specific numbers and metrics"
+    },
+    bahasa: {
+      persona: "Awak adalah usahawan berjaya yang berkongsi insight business yang telah terbukti",
+      style: "Praktikal, berorientasikan hasil dengan case study sebenar dan nasihat yang boleh diambil tindakan",
+      approach: "Fokus pada ROI, kongsi kegagalan dan kejayaan, beri nombor dan metrik spesifik"
+    }
+  },
+  {
+    name: "Philosopher",
+    english: {
+      persona: "You are a thoughtful philosopher exploring deeper meanings and connections",
+      style: "Reflective, thought-provoking questions that challenge assumptions",
+      approach: "Ask powerful questions, explore different perspectives, connect abstract concepts to daily life"
+    },
+    bahasa: {
+      persona: "Awak adalah ahli falsafah yang bijak meneroka makna mendalam dan hubungan",
+      style: "Reflektif, soalan yang mencabar pemikiran yang menggugat andaian",
+      approach: "Tanya soalan berkuasa, terokai perspektif berbeza, hubungkan konsep abstrak dengan kehidupan harian"
+    }
+  },
+  {
+    name: "Practical",
+    english: {
+      persona: "You are a no-nonsense expert who cuts straight to actionable solutions",
+      style: "Direct, efficient, focused on immediate implementation",
+      approach: "Skip theory, give step-by-step instructions, include tools and resources"
+    },
+    bahasa: {
+      persona: "Awak adalah pakar yang terus terang dan fokus pada penyelesaian yang boleh dilaksanakan",
+      style: "Terus terang, cekap, fokus pada pelaksanaan segera",
+      approach: "Langkau teori, beri arahan langkah demi langkah, sertakan tools dan sumber"
+    }
+  },
+  {
+    name: "Creative",
+    english: {
+      persona: "You are a creative storyteller who uses metaphors and narratives to explain concepts",
+      style: "Imaginative, story-driven with vivid analogies and emotional connections",
+      approach: "Use storytelling, create memorable metaphors, appeal to emotions and imagination"
+    },
+    bahasa: {
+      persona: "Awak adalah pencerita kreatif yang menggunakan metafora dan naratif untuk menerangkan konsep",
+      style: "Imaginatif, didorong cerita dengan analogi jelas dan sambungan emosi",
+      approach: "Guna storytelling, cipta metafora yang diingati, tarik emosi dan imaginasi"
+    }
+  }
+];
+
+// Dynamic template structures for variety
+const TEMPLATE_STRUCTURES: TemplateStructure[] = [
+  {
+    name: "Story Arc",
+    english: {
+      structure: "Problem → Journey → Solution → Lesson Learned",
+      hooks: ["I used to struggle with...", "Here's what nobody tells you about...", "Three years ago, I made a mistake that..."],
+      transitions: ["But here's what changed everything...", "Then I discovered...", "The breakthrough came when..."]
+    },
+    bahasa: {
+      structure: "Masalah → Perjalanan → Penyelesaian → Pengajaran",
+      hooks: ["Dulu saya struggle dengan...", "Ini yang tak ada orang cerita pasal...", "Tiga tahun lepas, saya buat mistake yang..."],
+      transitions: ["Tapi inilah yang ubah segalanya...", "Lepas tu saya discover...", "Breakthrough datang bila..."]
+    }
+  },
+  {
+    name: "Data-Driven",
+    english: {
+      structure: "Surprising Statistic → Analysis → Implications → Action Steps",
+      hooks: ["Did you know that 87% of people...", "This single statistic will change how you think about...", "The data reveals something shocking about..."],
+      transitions: ["Here's why this matters...", "The implications are huge...", "But here's what you can do about it..."]
+    },
+    bahasa: {
+      structure: "Statistik Mengejutkan → Analisis → Implikasi → Langkah Tindakan",
+      hooks: ["Tahukah awak yang 87% orang...", "Statistik ni akan ubah cara awak fikir pasal...", "Data tunjuk sesuatu yang shocking pasal..."],
+      transitions: ["Inilah kenapa penting...", "Implikasi dia besar...", "Tapi inilah yang awak boleh buat..."]
+    }
+  },
+  {
+    name: "Personal Experience",
+    english: {
+      structure: "\"I used to...\" → \"Now I...\" → \"Here's what I learned\" → \"You can too\"",
+      hooks: ["I used to think success meant...", "For years, I believed that...", "I spent $10,000 learning that..."],
+      transitions: ["Everything changed when...", "Now I realize that...", "Here's the truth..."]
+    },
+    bahasa: {
+      structure: "\"Dulu saya...\" → \"Sekarang saya...\" → \"Inilah yang saya belajar\" → \"Awak pun boleh\"",
+      hooks: ["Dulu saya fikir berjaya bermakna...", "Bertahun-tahun, saya percaya yang...", "Saya spend RM10,000 untuk belajar yang..."],
+      transitions: ["Semua berubah bila...", "Sekarang saya sedar yang...", "Inilah yang sebenarnya..."]
+    }
+  },
+  {
+    name: "Question Chain",
+    english: {
+      structure: "Hook Question → Supporting Questions → Insights → Final Thought",
+      hooks: ["What if everything you know about X is wrong?", "Why do successful people always...?", "Have you ever wondered why...?"],
+      transitions: ["But wait, there's more...", "Here's the deeper question...", "This leads to an important realization..."]
+    },
+    bahasa: {
+      structure: "Soalan Hook → Soalan Sokongan → Insight → Pemikiran Akhir",
+      hooks: ["Macam mana kalau semua yang awak tahu pasal X ni salah?", "Kenapa orang berjaya selalu...?", "Pernah tak awak wonder kenapa...?"],
+      transitions: ["Tapi tunggu, ada lagi...", "Inilah soalan yang lebih mendalam...", "Ini bawa kepada satu realisasi penting..."]
+    }
+  },
+  {
+    name: "Contrarian Take",
+    english: {
+      structure: "Common Belief → Why It's Wrong → The Real Truth → What To Do Instead",
+      hooks: ["Everyone says you should..., but they're wrong", "The advice everyone gives about X is backwards", "Stop doing what everyone else is doing with..."],
+      transitions: ["Here's the problem with that advice...", "The truth is actually the opposite...", "Instead, here's what actually works..."]
+    },
+    bahasa: {
+      structure: "Kepercayaan Biasa → Kenapa Salah → Kebenaran Sebenar → Apa Yang Patut Buat",
+      hooks: ["Semua orang cakap awak patut..., tapi derang salah", "Nasihat yang semua orang bagi pasal X ni terbalik", "Stop buat apa yang orang lain buat dengan..."],
+      transitions: ["Inilah masalah dengan nasihat tu...", "Sebenarnya kebenaran tu sebaliknya...", "Sebaliknya, inilah yang betul-betul works..."]
+    }
+  }
+];
+
+// Language style variations
+const LANGUAGE_STYLES = ['conversational', 'professional', 'motivational', 'analytical', 'humorous'];
+
+// Random elements for variation
+function getRandomPersonality(): PersonalityMode {
+  return PERSONALITY_MODES[Math.floor(Math.random() * PERSONALITY_MODES.length)];
+}
+
+function getRandomTemplate(): TemplateStructure {
+  return TEMPLATE_STRUCTURES[Math.floor(Math.random() * TEMPLATE_STRUCTURES.length)];
+}
+
+function getRandomStyle(): string {
+  return LANGUAGE_STYLES[Math.floor(Math.random() * LANGUAGE_STYLES.length)];
+}
+
+function getRandomElements() {
+  const emojiStyles = ['minimal', 'moderate', 'expressive'];
+  const numberingStyles = ['1/', 'Step 1:', 'First:', '→', '•'];
+  const toneVariations = ['casual', 'formal', 'energetic', 'calm'];
+  
+  return {
+    emojiStyle: emojiStyles[Math.floor(Math.random() * emojiStyles.length)],
+    numberingStyle: numberingStyles[Math.floor(Math.random() * numberingStyles.length)],
+    toneVariation: toneVariations[Math.floor(Math.random() * toneVariations.length)]
+  };
+}
+
+// Create dynamic system prompt based on selected elements
+function createDynamicSystemPrompt({ persona, template, style, randomElements, spec, length, language }: DynamicSystemPromptParams) {
+  const isEnglish = language === 'english';
+  
+  return `${persona.persona}
+
+PERSONALITY & APPROACH:
+${persona.style}
+${persona.approach}
+
+TEMPLATE STRUCTURE:
+${template.structure}
+
+THREAD SPECIFICATIONS FOR ${length.toUpperCase()}:
+📊 Target: ${spec.targetWords} words (${spec.wordCount} range)
+📱 Format: ${spec.tweetCount} tweets
+🎯 Style: ${spec.description}
+📝 Language Style: ${style}
+🎨 Tone: ${randomElements.toneVariation}
+😊 Emoji Usage: ${randomElements.emojiStyle}
+🔢 Numbering: ${randomElements.numberingStyle}
+
+${isEnglish ? `LANGUAGE: English only` : `LANGUAGE: Pure BAHASA MELAYU (Malaysian Malay) ONLY
+• Use Malaysian vocabulary: "boleh", "sangat", "tak/tidak", "awak/anda", "jom", "esok", "sebab", "kerana", "tahu"
+• BANNED Indonesian words: "bisa", "banget", "nggak/gak", "kamu", "aja", "kok", "ngomong", "karena", "ngobrol", "kayak"
+• Malaysian expressions: "jom pergi", "tak apa", "sangat bagus", "awak tahu tak"`}
+
+HOOK EXAMPLES (choose one approach):
+${template.hooks.map((hook: string) => `• ${hook}`).join('\n')}
+
+TRANSITION PHRASES:
+${template.transitions.map((trans: string) => `• ${trans}`).join('\n')}
+
+ENGAGEMENT OPTIMIZATION:
+• Use the ${randomElements.numberingStyle} numbering style
+• ${randomElements.emojiStyle === 'minimal' ? 'Use very few emojis' : randomElements.emojiStyle === 'moderate' ? 'Use strategic emoji placement' : 'Use expressive emojis throughout'}
+• Each tweet should feel fresh and unique
+• Vary sentence length and structure
+• Include specific, actionable insights
+• End with memorable takeaway
+
+FORMAT REQUIREMENTS:
+Respond with JSON in this exact format:
+{
+  "thread": "${isEnglish ? '🧵 THREAD:' : '🧵 THREAD:'} [Topic]\\n\\n[First tweet using ${randomElements.numberingStyle} style]\\n\\n[Continue with subsequent tweets]"
+}`;
+}
+
+// Create dynamic user prompt
+function createDynamicUserPrompt({ topic, spec, personality, template, style, language }: DynamicUserPromptParams) {
+  const isEnglish = language === 'english';
+  
+  return `Create a viral Twitter thread about: "${topic}"
+
+INSTRUCTIONS:
+• Use the ${personality} personality approach
+• Follow the ${template} template structure  
+• Write in ${style} ${isEnglish ? 'English' : 'Bahasa Malaysia'} style
+• Target: ${spec.targetWords} words
+• Make it engaging, shareable, and valuable
+• Focus on what will make people read, engage, and share
+
+${isEnglish ? 
+  'Write in English only.' : 
+  'IMPORTANT: Write in pure Malaysian Malay (Bahasa Melayu) using proper Malaysian vocabulary and expressions. Do NOT use Indonesian words.'}`;
+}
+
 export async function generateViralThread(request: ThreadGenerationRequest): Promise<ThreadResponse> {
   try {
     const { topic, length } = request;
@@ -56,74 +343,54 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
     
     const spec = lengthSpecs[length];
     
-    // Optimized single-shot generation with precise viral-focused prompting
-    const systemPrompt = `You are a viral content expert and Twitter thread specialist. Create threads that maximize engagement, shareability, and completion rates.
+    // Detect language - prioritize Bahasa Malaysia detection first
+    const hasIndonesianWords = /\b(bisa|banget|nggak|gak|kamu|aja|kok|ngomong|karena|ngobrol|kayak|soalnya|makanya|biar|gua|gue|loe|lu)\b/i.test(topic);
+    
+    // Comprehensive Malaysian words detection
+    const hasMalaysianWords = /\b(jom|tak|tidak|awak|anda|boleh|sangat|kerana|sebab|tahu|esok|lah|jer|kan|cara|nak|hendak|duit|ringgit|rm|buat|dapat|dapatkan|pertama|kedua|ketiga|memang|betul|bagus|best|power|gila|sihat|sakit|makan|minum|kerja|sekolah|rumah|kereta|motor|basikal|telefon|handphone|hp|komputer|laptop|internet|wifi|facebook|instagram|tiktok|youtube|whatsapp|telegram)\b/i.test(topic);
+    
+    // Common Malay words that could be either Malaysian or Indonesian (but if no Indonesian markers, assume Malaysian)
+    const hasCommonMalayWords = /\b(dalam|dengan|untuk|yang|ini|itu|akan|sudah|buat|macam|mana|bila|masa|saya|kita|mereka|dia|apa|kenapa|bagaimana|dimana|kapan|siapa|berapa|sudah|belum|pernah|selalu|sering|kadang|jarang|tidak|bukan|atau|dan|tetapi|tapi|kalau|jika|sebab|kerana|oleh|dari|ke|di|pada|tentang|seperti|sama|lain|semua|setiap|beberapa|satu|dua|tiga|empat|lima|enam|tujuh|lapan|sembilan|sepuluh)\b/i.test(topic);
+    
+    // More comprehensive Bahasa Malaysia detection
+    const isBahasaMalaysia = hasMalaysianWords || 
+                           (!hasIndonesianWords && hasCommonMalayWords);
+    
+    const isEnglish = !isBahasaMalaysia && /^[a-zA-Z\s.,!?;:'"\-()0-9]+$/.test(topic);
+    
+    // Randomly select personality and template for variety
+    const selectedPersonality = getRandomPersonality();
+    const selectedTemplate = getRandomTemplate();
+    const selectedStyle = getRandomStyle();
+    const randomElements = getRandomElements();
+    
+    console.log(`Topic: "${topic}"`);
+    console.log(`Language detected: ${isBahasaMalaysia ? 'Bahasa Malaysia' : 'English'}`);
+    console.log(`Generating thread with ${selectedPersonality.name} personality, ${selectedTemplate.name} template, ${selectedStyle} style`);
+    
+    // Create dynamic system prompt based on selected personality and template
+    const language = isBahasaMalaysia ? 'bahasa' : 'english';
+    const persona = selectedPersonality[language];
+    const template = selectedTemplate[language];
+    
+    const systemPrompt = createDynamicSystemPrompt({
+      persona,
+      template,
+      style: selectedStyle,
+      randomElements,
+      spec,
+      length,
+      language: isBahasaMalaysia ? 'bahasa_malaysia' : 'english'
+    });
 
-THREAD SPECIFICATIONS FOR ${length.toUpperCase()}:
-📊 Target: ${spec.targetWords} words (${spec.wordCount} range)
-📱 Format: ${spec.tweetCount} tweets
-🎯 Style: ${spec.description}
-
-LANGUAGE INSTRUCTIONS:
-• ALWAYS respond in the SAME language as the user's topic
-• Detect language carefully - distinguish between Bahasa Malaysia/Melayu vs Bahasa Indonesia
-
-FOR BAHASA MALAYSIA/MELAYU TOPICS:
-• Respond in pure BAHASA MELAYU (Malaysian Malay) ONLY
-• Use Malaysian vocabulary: "boleh", "sangat", "tak/tidak", "awak/anda", "jom", "esok", "sebab", "kerana", "tahu"
-• BANNED Indonesian words: "bisa", "banget", "nggak/gak", "kamu", "aja", "kok", "ngomong", "karena", "ngobrol", "kayak", "soalnya", "makanya", "biar", "gua/gue/loe/lu"
-• Malaysian expressions: "jom pergi", "tak apa", "sangat bagus", "awak tahu tak"
-• Do not mix languages - pure Bahasa Melayu only
-
-FOR BAHASA INDONESIA TOPICS:
-• Respond in pure BAHASA INDONESIA only
-• Use Indonesian vocabulary and expressions naturally
-
-AMBIGUITY RULE:
-• If mixed/unclear language and Malaysian cues present: enforce pure Bahasa Melayu
-• If no clear language indicators: default to user's apparent preference
-
-EXAMPLES:
-• ms-MY: "Jom kita belajar cara untuk sangat berjaya! Awak boleh buat ini tak?"  
-• id-ID: "Ayo kita belajar cara biar bisa sukses banget! Kamu bisa gak?"
-
-• If English topic: Respond in English  
-• If other languages: Respond in that language
-
-VIRAL CONTENT PRINCIPLES:
-${length === 'short' ? `
-• Hook with curiosity gap or surprising fact
-• Each tweet delivers immediate value
-• Use power words and emotional triggers
-• End with actionable takeaway` : length === 'medium' ? `
-• Strong narrative structure with clear progression  
-• Mix of insights, examples, and practical tips
-• Build momentum tweet by tweet
-• Include specific numbers/data when relevant` : `
-• Deep expertise demonstration with authority signals
-• Multiple angles and comprehensive coverage
-• Strategic use of stories, case studies, examples
-• Layer insights for different audience levels`}
-
-ENGAGEMENT OPTIMIZATION:
-• Start with hook that creates curiosity/urgency
-• Use numbered tweets (1/, 2/, 3/, etc.)
-• Strategic emoji placement (not overwhelming)
-• Specific, actionable insights over generic advice
-• Strong call-to-action or thought-provoking question
-• Each tweet under 280 characters
-• Natural conversation flow between tweets
-
-Respond with JSON in this exact format:
-{
-  "thread": "🧵 THREAD: [Topic]\\n\\n1/ [First tweet content]\\n\\n2/ [Second tweet content]\\n\\n[Continue with numbered tweets]"
-}`;
-
-    const userPrompt = `Create a viral Twitter thread about: "${topic}"
-
-Target: ${spec.targetWords} words. Make it engaging, shareable, and valuable. Focus on what will actually get people to read, engage, and share.
-
-IMPORTANT: Respond in the SAME language as the topic above. If the topic is in Bahasa Malaysia/Melayu, use pure Malaysian Malay vocabulary and expressions (not Indonesian).`;
+    const userPrompt = createDynamicUserPrompt({
+      topic,
+      spec,
+      personality: selectedPersonality.name,
+      template: selectedTemplate.name,
+      style: selectedStyle,
+      language: isBahasaMalaysia ? 'bahasa_malaysia' : 'english'
+    });
 
     // Use optimized token limits based on thread length
     let response;
