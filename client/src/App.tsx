@@ -10,6 +10,7 @@ import NotFound from "@/pages/not-found";
 import { Desktop } from "@/pages/Desktop";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
 import AuthConfirm from "@/pages/AuthConfirm";
 import TermsOfService from "@/pages/TermsOfService";
 import Billing from "@/pages/Billing";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/" component={Desktop} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/auth/confirm" component={AuthConfirm} />
       
       {/* Protected billing page - only for users without active subscription */}

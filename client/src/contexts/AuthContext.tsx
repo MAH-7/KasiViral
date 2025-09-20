@@ -25,6 +25,8 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string; message?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  resetPassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -193,6 +195,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email: string): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      const supabase = await getSupabaseClient();
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      
+      return { 
+        success: true, 
+        message: 'Password reset email sent! Please check your inbox and follow the instructions.'
+      };
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
+  const resetPassword = async (password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const supabase = await getSupabaseClient();
+      
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
   const logout = async () => {
     try {
       const supabase = await getSupabaseClient();
@@ -210,6 +253,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
+    forgotPassword,
+    resetPassword,
     logout,
   };
 

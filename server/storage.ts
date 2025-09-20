@@ -5,7 +5,9 @@ import { db } from "./db";
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserBySupabaseId(supabaseId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  createUserFromSupabase(supabaseId: string, email: string, name: string): Promise<User>;
   getSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
   upsertSubscription(subscription: InsertSubscription): Promise<Subscription>;
   createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription>;
@@ -23,8 +25,38 @@ export class DrizzleStorage implements IStorage {
     return result[0];
   }
 
+  async getUserBySupabaseId(supabaseId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.supabaseId, supabaseId)).limit(1);
+    return result[0];
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+
+  async createUserFromSupabase(supabaseId: string, email: string, name: string): Promise<User> {
+    const result = await db
+      .insert(users)
+      .values({
+        supabaseId,
+        email,
+        name,
+      })
+      .onConflictDoNothing({
+        target: users.supabaseId,
+      })
+      .returning();
+    
+    // If conflict occurred (no rows returned), fetch the existing user
+    if (result.length === 0) {
+      const existing = await this.getUserBySupabaseId(supabaseId);
+      if (existing) {
+        return existing;
+      }
+      throw new Error('Failed to create or retrieve user');
+    }
+    
     return result[0];
   }
 

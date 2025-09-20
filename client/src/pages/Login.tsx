@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { HeaderSection } from "./sections/HeaderSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { handlePostAuthRedirect } from "@/lib/authRedirect";
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Login(): JSX.Element {
@@ -15,6 +16,7 @@ export default function Login(): JSX.Element {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [, navigate] = useLocation();
   const { login } = useAuth();
 
@@ -112,9 +114,11 @@ export default function Login(): JSX.Element {
               {/* Forgot Password */}
               <div className="text-right">
                 <Button
+                  type="button"
                   variant="link"
                   size="sm"
                   className="text-primary hover:text-primary/80 p-0 h-auto"
+                  onClick={() => setIsResetModalOpen(true)}
                   data-testid="link-forgot-password"
                 >
                   Forgot password?
@@ -169,6 +173,12 @@ export default function Login(): JSX.Element {
         </Card>
       </div>
       </div>
+      
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={isResetModalOpen} 
+        onClose={() => setIsResetModalOpen(false)} 
+      />
     </div>
   );
 }

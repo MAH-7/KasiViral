@@ -241,7 +241,7 @@ export default function Register(): JSX.Element {
                     data-testid="checkbox-marketing"
                   />
                   <Label htmlFor="marketing" className="text-sm leading-relaxed cursor-pointer">
-                    I would like to receive marketing emails about new features, tips, and product updates from ThreadMaster AI
+                    I would like to receive marketing emails about new features, tips, and product updates from KasiViral
                   </Label>
                 </div>
               </div>

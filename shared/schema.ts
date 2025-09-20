@@ -4,9 +4,9 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  supabaseId: text("supabase_id").notNull().unique(), // Supabase user ID
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  password: text("password").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -20,13 +20,13 @@ export const subscriptions = pgTable("subscriptions", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
+  supabaseId: true,
   email: true,
   name: true,
-  password: true,
 }).extend({
+  supabaseId: z.string().min(1, "Supabase ID is required"),
   email: z.string().email("Please enter a valid email address"),
   name: z.string().min(1, "Name is required"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).pick({

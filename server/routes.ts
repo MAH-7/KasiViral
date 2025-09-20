@@ -15,6 +15,9 @@ interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
+    user_metadata?: {
+      full_name?: string;
+    };
   };
 }
 
@@ -39,6 +42,7 @@ async function verifyAuth(req: AuthenticatedRequest, res: Response, next: NextFu
     req.user = {
       id: user.id,
       email: user.email || '',
+      user_metadata: user.user_metadata || {},
     };
     
     next();
@@ -163,18 +167,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // Authenticated registration endpoint to create default subscription for new users
+  // Authenticated registration endpoint to create user and default subscription for new users
   app.post("/api/auth/register", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      // Use authenticated user's ID from token, not from request body
+      // Use authenticated user's ID and metadata from token
       const userId = req.user!.id;
       const userEmail = req.user!.email;
+      const userName = req.user!.user_metadata?.full_name || req.user!.email || 'User';
       
-      // Check if subscription already exists
+      // Check if user already exists in local database
+      const existingUser = await storage.getUserBySupabaseId(userId);
       const existingSubscription = await storage.getSubscriptionByUserId(userId);
-      if (existingSubscription) {
+      
+      if (existingUser && existingSubscription) {
         return res.json({ 
           message: 'User already registered',
+          user: {
+            id: existingUser.id,
+            email: existingUser.email,
+            name: existingUser.name,
+          },
           subscription: {
             status: existingSubscription.status,
             plan: existingSubscription.plan,
@@ -183,18 +195,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create default inactive subscription with 30 days from now
-      const defaultExpiryDate = new Date();
-      defaultExpiryDate.setDate(defaultExpiryDate.getDate() + 30);
+      // Create user record in local database if it doesn't exist
+      const user = await storage.createUserFromSupabase(userId, userEmail, userName);
       
-      const subscription = await storage.createInactiveSubscription({
-        userId,
-        plan: 'monthly',
-        expiresAt: defaultExpiryDate,
-      });
+      // Create default inactive subscription with 30 days from now if it doesn't exist
+      let subscription = existingSubscription;
+      if (!subscription) {
+        const defaultExpiryDate = new Date();
+        defaultExpiryDate.setDate(defaultExpiryDate.getDate() + 30);
+        
+        subscription = await storage.createInactiveSubscription({
+          userId,
+          plan: 'monthly',
+          expiresAt: defaultExpiryDate,
+        });
+      }
       
       res.json({
         message: 'User registered successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
         subscription: {
           status: subscription.status,
           plan: subscription.plan,
