@@ -64,6 +64,32 @@ THREAD SPECIFICATIONS FOR ${length.toUpperCase()}:
 📱 Format: ${spec.tweetCount} tweets
 🎯 Style: ${spec.description}
 
+LANGUAGE INSTRUCTIONS:
+• ALWAYS respond in the SAME language as the user's topic
+• Detect language carefully - distinguish between Bahasa Malaysia/Melayu vs Bahasa Indonesia
+
+FOR BAHASA MALAYSIA/MELAYU TOPICS:
+• Respond in pure BAHASA MELAYU (Malaysian Malay) ONLY
+• Use Malaysian vocabulary: "boleh", "sangat", "tak/tidak", "awak/anda", "jom", "esok", "sebab", "kerana", "tahu"
+• BANNED Indonesian words: "bisa", "banget", "nggak/gak", "kamu", "aja", "kok", "ngomong", "karena", "ngobrol", "kayak", "soalnya", "makanya", "biar", "gua/gue/loe/lu"
+• Malaysian expressions: "jom pergi", "tak apa", "sangat bagus", "awak tahu tak"
+• Do not mix languages - pure Bahasa Melayu only
+
+FOR BAHASA INDONESIA TOPICS:
+• Respond in pure BAHASA INDONESIA only
+• Use Indonesian vocabulary and expressions naturally
+
+AMBIGUITY RULE:
+• If mixed/unclear language and Malaysian cues present: enforce pure Bahasa Melayu
+• If no clear language indicators: default to user's apparent preference
+
+EXAMPLES:
+• ms-MY: "Jom kita belajar cara untuk sangat berjaya! Awak boleh buat ini tak?"  
+• id-ID: "Ayo kita belajar cara biar bisa sukses banget! Kamu bisa gak?"
+
+• If English topic: Respond in English  
+• If other languages: Respond in that language
+
 VIRAL CONTENT PRINCIPLES:
 ${length === 'short' ? `
 • Hook with curiosity gap or surprising fact
@@ -95,7 +121,9 @@ Respond with JSON in this exact format:
 
     const userPrompt = `Create a viral Twitter thread about: "${topic}"
 
-Target: ${spec.targetWords} words. Make it engaging, shareable, and valuable. Focus on what will actually get people to read, engage, and share.`;
+Target: ${spec.targetWords} words. Make it engaging, shareable, and valuable. Focus on what will actually get people to read, engage, and share.
+
+IMPORTANT: Respond in the SAME language as the topic above. If the topic is in Bahasa Malaysia/Melayu, use pure Malaysian Malay vocabulary and expressions (not Indonesian).`;
 
     // Use optimized token limits based on thread length
     let response;

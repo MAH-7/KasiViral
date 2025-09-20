@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { HeaderSection } from "./sections/HeaderSection";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, Star, Lightbulb, X } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, Lightbulb, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 type ThreadLength = "short" | "medium" | "long";
 
@@ -19,7 +19,6 @@ interface Thread {
   length: ThreadLength;
   wordCount: number;
   tweetCount: number;
-  isFavorite: boolean;
   copyCount: number;
   createdAt: string;
 }
@@ -33,6 +32,7 @@ export default function Dashboard(): JSX.Element {
   const [recentThreads, setRecentThreads] = useState<Thread[]>([]);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
   const [viewingThread, setViewingThread] = useState<Thread | null>(null);
+  const [deletingThread, setDeletingThread] = useState<Thread | null>(null);
 
   const lengthOptions = {
     short: {
@@ -228,48 +228,18 @@ export default function Dashboard(): JSX.Element {
     }
   };
 
-  const handleToggleFavorite = async (threadId: number, currentFavoriteStatus: boolean) => {
-    try {
-      const token = await getAuthToken();
-      
-      const response = await fetch(`/api/threads/${threadId}/favorite`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isFavorite: !currentFavoriteStatus
-        }),
-      });
 
-      if (response.ok) {
-        // Optimistically update the local state
-        setRecentThreads(prevThreads =>
-          prevThreads.map(thread =>
-            thread.id === threadId
-              ? { ...thread, isFavorite: !currentFavoriteStatus }
-              : thread
-          )
-        );
-      } else {
-        throw new Error('Failed to update favorite status');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      alert('Failed to update favorite status. Please try again.');
-    }
+  const handleDeleteThread = (thread: Thread) => {
+    setDeletingThread(thread);
   };
 
-  const handleDeleteThread = async (threadId: number) => {
-    if (!confirm('Are you sure you want to delete this thread? This action cannot be undone.')) {
-      return;
-    }
+  const confirmDeleteThread = async () => {
+    if (!deletingThread) return;
 
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`/api/threads/${threadId}`, {
+      const response = await fetch(`/api/threads/${deletingThread.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -280,8 +250,9 @@ export default function Dashboard(): JSX.Element {
       if (response.ok) {
         // Remove from local state
         setRecentThreads(prevThreads =>
-          prevThreads.filter(thread => thread.id !== threadId)
+          prevThreads.filter(thread => thread.id !== deletingThread.id)
         );
+        setDeletingThread(null);
       } else {
         throw new Error('Failed to delete thread');
       }
@@ -409,12 +380,10 @@ export default function Dashboard(): JSX.Element {
                         }`}
                         data-testid={`length-${key}`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                           {option.icon}
                           <span className="font-semibold">{option.name}</span>
                         </div>
-                        <p className="text-sm font-medium">{option.description}</p>
-                        <p className="text-xs text-gray-600 mt-1">{option.subtitle}</p>
                       </button>
                     ))}
                   </div>
@@ -544,9 +513,6 @@ export default function Dashboard(): JSX.Element {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-semibold text-base">{thread.topic}</h4>
-                            {thread.isFavorite && (
-                              <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                            )}
                           </div>
                           <div className="flex items-center gap-3 mb-2">
                             <Badge className={`text-xs ${getLengthBadgeColor(thread.length)}`}>
@@ -601,7 +567,7 @@ export default function Dashboard(): JSX.Element {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700"
-                            onClick={() => handleDeleteThread(thread.id)}
+                            onClick={() => handleDeleteThread(thread)}
                             data-testid={`delete-thread-${thread.id}`}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -620,12 +586,19 @@ export default function Dashboard(): JSX.Element {
       {/* Thread View Modal */}
       {viewingThread && (
         <Dialog open={!!viewingThread} onOpenChange={() => setViewingThread(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {viewingThread.topic}
-              </DialogTitle>
-              <DialogDescription className="flex items-center gap-4 text-sm">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[85dvh] overflow-y-auto mx-auto p-4 sm:p-6 [&>button[aria-label='Close']]:hidden">
+            <DialogHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-4">
+              <div className="flex items-start justify-between gap-3">
+                <DialogTitle className="flex-1 min-w-0 text-base sm:text-lg leading-snug line-clamp-2 break-words pr-2">
+                  {viewingThread.topic}
+                </DialogTitle>
+                <DialogClose asChild>
+                  <Button variant="ghost" size="icon" aria-label="Close" className="shrink-0 -mr-2 sm:mr-0">
+                    <X className="h-5 w-5" />
+                  </Button>
+                </DialogClose>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                 <Badge className={`${getLengthBadgeColor(viewingThread.length)}`}>
                   {lengthOptions[viewingThread.length].name}
                 </Badge>
@@ -633,20 +606,20 @@ export default function Dashboard(): JSX.Element {
                 <span>{viewingThread.tweetCount} tweets</span>
                 <span>{viewingThread.createdAt}</span>
                 <span>Copied {viewingThread.copyCount} times</span>
-              </DialogDescription>
+              </div>
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-6">
-                <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
+              <div className="bg-muted/50 rounded-lg p-3 sm:p-6">
+                <pre className="whitespace-pre-wrap text-xs sm:text-sm font-mono leading-relaxed break-words overflow-x-auto">
                   {viewingThread.content}
                 </pre>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   onClick={() => handleCopyRecentThread(viewingThread.content, viewingThread.id)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                 >
                   <Copy className="w-4 h-4" />
                   Copy Thread
@@ -662,7 +635,7 @@ export default function Dashboard(): JSX.Element {
                     element.click();
                     document.body.removeChild(element);
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                 >
                   <Download className="w-4 h-4" />
                   Download
@@ -673,20 +646,46 @@ export default function Dashboard(): JSX.Element {
                     handleRegenerateThread(viewingThread.topic, viewingThread.length);
                     setViewingThread(null);
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Regenerate
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleToggleFavorite(viewingThread.id, viewingThread.isFavorite)}
-                  className="flex items-center gap-2"
-                >
-                  <Star className={`w-4 h-4 ${viewingThread.isFavorite ? 'text-yellow-500 fill-current' : ''}`} />
-                  {viewingThread.isFavorite ? 'Unfavorite' : 'Favorite'}
-                </Button>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deletingThread && (
+        <Dialog open={!!deletingThread} onOpenChange={() => setDeletingThread(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5" />
+                Delete Thread
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{deletingThread.topic}"? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setDeletingThread(null)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteThread}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
