@@ -8,6 +8,7 @@ export interface IStorage {
   getUserBySupabaseId(supabaseId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createUserFromSupabase(supabaseId: string, email: string, name: string): Promise<User>;
+  updateUserProfile(supabaseId: string, updates: { email?: string; name?: string }): Promise<User>;
   getSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
   upsertSubscription(subscription: InsertSubscription): Promise<Subscription>;
   createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription>;
@@ -55,6 +56,39 @@ export class DrizzleStorage implements IStorage {
         return existing;
       }
       throw new Error('Failed to create or retrieve user');
+    }
+    
+    return result[0];
+  }
+
+  async updateUserProfile(supabaseId: string, updates: { email?: string; name?: string }): Promise<User> {
+    const updateData: Partial<Pick<User, 'email' | 'name'>> = {};
+    
+    if (updates.email) {
+      updateData.email = updates.email;
+    }
+    
+    if (updates.name) {
+      updateData.name = updates.name;
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      // No updates provided, just return existing user
+      const existing = await this.getUserBySupabaseId(supabaseId);
+      if (!existing) {
+        throw new Error('User not found');
+      }
+      return existing;
+    }
+    
+    const result = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.supabaseId, supabaseId))
+      .returning();
+    
+    if (result.length === 0) {
+      throw new Error('User not found or update failed');
     }
     
     return result[0];

@@ -50,21 +50,49 @@ export default function Dashboard(): JSX.Element {
     
     setIsGenerating(true);
     
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      setGeneratedThread(`🧵 THREAD: ${topic}
+    try {
+      // Get auth token for API call
+      const { getSupabaseClient } = await import("@/lib/supabase");
+      const supabase = await getSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No authentication token available');
+      }
 
-1/ This is a sample generated thread about ${topic}. 
+      // Call the thread generation API
+      const response = await fetch('/api/generate-thread', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: topic.trim(),
+          length: selectedLength
+        }),
+      });
 
-2/ The AI would generate compelling content based on your topic and selected length (${selectedLength}).
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate thread');
+      }
 
-3/ Each tweet would be crafted to maximize engagement and virality.
-
-4/ This is just a placeholder - the real integration will use OpenAI API.
-
-5/ Your ${selectedLength} thread would have the appropriate number of tweets for maximum impact! 🚀`);
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setGeneratedThread(result.data.thread);
+      } else {
+        throw new Error('Invalid response format');
+      }
+      
+    } catch (error) {
+      console.error('Error generating thread:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to generate thread: ${errorMessage}`);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleCopy = () => {

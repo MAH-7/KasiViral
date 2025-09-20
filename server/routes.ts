@@ -230,6 +230,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile update endpoint
+  app.put("/api/auth/profile", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { email, name } = req.body;
+      
+      // Validate input
+      if (!email && !name) {
+        return res.status(400).json({ error: 'At least one field (email or name) is required' });
+      }
+      
+      // Update user profile in local database
+      const updatedUser = await storage.updateUserProfile(userId, { email, name });
+      
+      res.json({
+        message: 'Profile updated successfully',
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
+
+  // Thread generation endpoint - requires active subscription
+  app.post("/api/generate-thread", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { topic, length } = req.body;
+      
+      // Validate input
+      if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
+        return res.status(400).json({ error: 'Topic is required and must be a non-empty string' });
+      }
+      
+      if (!length || !['short', 'medium', 'long'].includes(length)) {
+        return res.status(400).json({ error: 'Length must be one of: short, medium, long' });
+      }
+      
+      // Import the OpenAI service dynamically to avoid import issues
+      const { generateViralThread } = await import('./openai');
+      
+      // Generate thread using OpenAI
+      const result = await generateViralThread({ topic: topic.trim(), length });
+      
+      res.json({
+        success: true,
+        data: result
+      });
+      
+    } catch (error) {
+      console.error('Error generating thread:', error);
+      
+      // Handle different types of errors appropriately
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      if (errorMessage.includes('API key')) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'API service temporarily unavailable. Please try again later.' 
+        });
+      }
+      
+      if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+        return res.status(429).json({ 
+          success: false, 
+          error: 'Service is experiencing high demand. Please try again in a moment.' 
+        });
+      }
+      
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to generate thread. Please try again.' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

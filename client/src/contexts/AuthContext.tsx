@@ -241,6 +241,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const supabase = await getSupabaseClient();
       
+      // First update Supabase auth
       const updateData: any = {};
       
       if (updates.email) {
@@ -259,12 +260,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: error.message };
       }
       
+      // Then update local database with proper authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        return { success: false, error: 'No authentication token available' };
+      }
+
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || 'Failed to update profile in database' };
+      }
+      
+      const responseData = await response.json();
+      
       // Update local user state with new data
-      if (data.user) {
+      if (data.user && responseData.user) {
         setUser({
           id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.full_name || data.user.email || '',
+          email: responseData.user.email,
+          name: responseData.user.name,
         });
       }
       
