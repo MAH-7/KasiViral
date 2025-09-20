@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { HeaderSection } from "./sections/HeaderSection";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
 import { 
   User, 
   Mail, 
@@ -14,34 +16,82 @@ import {
   Settings as SettingsIcon, 
   Save,
   Shield,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
 
 export default function Settings(): JSX.Element {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
+  const { toast } = useToast();
+  
   // Split the user name into first and last name for editing
   const nameParts = (user?.name || "").split(" ");
   const [firstName, setFirstName] = useState(nameParts[0] || "");
   const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      const parts = user.name.split(" ");
+      setFirstName(parts[0] || "");
+      setLastName(parts.slice(1).join(" ") || "");
+      setEmail(user.email);
+    }
+  }, [user]);
+
+  // Fetch subscription data using existing hook
+  const { subscription, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement profile update logic
-    console.log("Saving profile:", { firstName, lastName, email });
+    setIsUpdating(true);
+    
+    try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      const result = await updateProfile({
+        email: email.trim(),
+        name: fullName
+      });
+      
+      if (result.success) {
+        toast({
+          title: "Profile updated successfully!",
+          description: "Your profile information has been saved.",
+        });
+      } else {
+        toast({
+          title: "Update failed",
+          description: result.error || "Failed to update profile. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleManageBilling = () => {
     // TODO: Implement billing management
-    console.log("Managing billing");
+    toast({
+      title: "Coming soon",
+      description: "Billing management feature will be available soon.",
+    });
   };
 
-  // Mock data for subscription info
-  const memberSince = "January 2024";
-  const paymentMethod = "FPX - Maybank";
-  const planName = "Pro Plan";
-  const planStatus = "Active";
-  const expiryDate = "March 15, 2025";
+  // Format subscription data with correct field mappings
+  const memberSince = "January 2024"; // Would come from user registration date or subscription createdAt
+  const paymentMethod = "FPX - Maybank"; // This would come from payment provider
+  const planName = subscription?.plan ? `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan` : "No Plan";
+  const planStatus = subscription?.status === 'active' ? "Active" : "Inactive";
+  const expiryDate = subscription?.expiresAt && subscription.expiresAt !== null ? new Date(subscription.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "N/A";
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
@@ -161,11 +211,21 @@ export default function Settings(): JSX.Element {
                   {/* Save Button */}
                   <Button
                     type="submit"
-                    className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105"
+                    disabled={isUpdating}
+                    className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                     data-testid="button-save-profile"
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    Update Profile
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Update Profile
+                      </>
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -189,14 +249,23 @@ export default function Settings(): JSX.Element {
                     <CreditCard className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Current Plan</p>
-                      <p className="text-sm text-muted-foreground">{planName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {subscriptionLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Loading...
+                          </div>
+                        ) : subscriptionError ? (
+                          "Failed to load"
+                        ) : planName}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className={`text-sm font-medium ${
-                      planStatus === 'Active' ? 'text-green-600' : 'text-red-600'
+                      planStatus === 'Active' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`}>
-                      {planStatus}
+                      {subscriptionLoading ? '...' : subscriptionError ? 'Error' : planStatus}
                     </p>
                   </div>
                 </div>
@@ -207,7 +276,16 @@ export default function Settings(): JSX.Element {
                     <Calendar className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Member Since</p>
-                      <p className="text-sm text-muted-foreground">{memberSince}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {subscriptionLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Loading...
+                          </div>
+                        ) : subscriptionError ? (
+                          "Failed to load"
+                        ) : memberSince}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -229,7 +307,16 @@ export default function Settings(): JSX.Element {
                     <Clock className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Expires On</p>
-                      <p className="text-sm text-muted-foreground">{expiryDate}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {subscriptionLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Loading...
+                          </div>
+                        ) : subscriptionError ? (
+                          "Failed to load"
+                        ) : expiryDate}
+                      </p>
                     </div>
                   </div>
                 </div>

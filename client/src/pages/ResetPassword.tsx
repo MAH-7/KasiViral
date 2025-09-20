@@ -27,11 +27,6 @@ export default function ResetPassword(): JSX.Element {
       try {
         const supabase = await getSupabaseClient();
         
-        // Clear the URL hash after Supabase processes it for security
-        if (window.location.hash) {
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-        }
-        
         // Check URL for error parameters first
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
@@ -41,6 +36,31 @@ export default function ResetPassword(): JSX.Element {
           setError(errorDescription || 'Invalid or expired reset link');
           setHasValidSession(false);
           return;
+        }
+        
+        // Extract tokens from URL hash if present
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          const type = hashParams.get('type');
+          
+          if (accessToken && refreshToken && type === 'recovery') {
+            // Set the session with the tokens from the URL
+            const { data, error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (setSessionError) {
+              setError('Invalid or expired reset link');
+              setHasValidSession(false);
+              return;
+            }
+          }
+          
+          // Clear the URL hash after processing for security
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
         }
         
         // Verify we have a valid recovery session
@@ -74,8 +94,23 @@ export default function ResetPassword(): JSX.Element {
     }
     
     // Validate password strength
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+    
+    // Check for mix of letters and numbers
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      setError("Password must contain both letters and numbers");
+      return;
+    }
+    
+    // Check for common passwords
+    const commonPasswords = ['password', '12345678', 'qwerty123', 'password1', 'password123', 'admin123', 'welcome123'];
+    if (commonPasswords.includes(password.toLowerCase())) {
+      setError("Password is too common. Please choose a more secure password");
       return;
     }
     
@@ -311,8 +346,14 @@ export default function ResetPassword(): JSX.Element {
                 <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
                   <p className="font-medium mb-1">Password Requirements:</p>
                   <ul className="space-y-1">
-                    <li className={password.length >= 6 ? "text-green-600 dark:text-green-400" : ""}>
-                      • At least 6 characters long
+                    <li className={password.length >= 8 ? "text-green-600 dark:text-green-400" : ""}>
+                      • At least 8 characters
+                    </li>
+                    <li className={/[a-zA-Z]/.test(password) && /[0-9]/.test(password) ? "text-green-600 dark:text-green-400" : ""}>
+                      • Mix of letters and numbers
+                    </li>
+                    <li className={password.length > 0 && !['password', '12345678', 'qwerty123', 'password1', 'password123', 'admin123', 'welcome123'].includes(password.toLowerCase()) ? "text-green-600 dark:text-green-400" : ""}>
+                      • Cannot be too common
                     </li>
                     <li className={password === confirmPassword && password.length > 0 ? "text-green-600 dark:text-green-400" : ""}>
                       • Passwords match

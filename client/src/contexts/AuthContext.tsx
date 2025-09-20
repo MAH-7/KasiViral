@@ -27,6 +27,7 @@ interface AuthContextType {
   register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string; message?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   resetPassword: (password: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (updates: { email?: string; name?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -236,6 +237,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateProfile = async (updates: { email?: string; name?: string }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const supabase = await getSupabaseClient();
+      
+      const updateData: any = {};
+      
+      if (updates.email) {
+        updateData.email = updates.email;
+      }
+      
+      if (updates.name) {
+        updateData.data = {
+          full_name: updates.name
+        };
+      }
+      
+      const { data, error } = await supabase.auth.updateUser(updateData);
+      
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      
+      // Update local user state with new data
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.full_name || data.user.email || '',
+        });
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
   const logout = async () => {
     try {
       const supabase = await getSupabaseClient();
@@ -255,6 +294,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     forgotPassword,
     resetPassword,
+    updateProfile,
     logout,
   };
 

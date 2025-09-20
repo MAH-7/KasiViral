@@ -87,23 +87,14 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="pt-2">
             <Button
               type="submit"
               disabled={isLoading || !email.trim()}
-              className="flex-1 gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 disabled:opacity-50"
+              className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 disabled:opacity-50"
               data-testid="button-send-reset-email"
             >
               {isLoading ? "Sending..." : "Send Reset Link"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="border-border/50 hover:bg-accent"
-              data-testid="button-cancel-reset"
-            >
-              <X className="w-4 h-4" />
             </Button>
           </div>
         </form>
