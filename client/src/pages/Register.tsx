@@ -20,6 +20,7 @@ export default function Register(): JSX.Element {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToMarketing, setAgreeToMarketing] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [, navigate] = useLocation();
   const { register } = useAuth();
@@ -27,6 +28,7 @@ export default function Register(): JSX.Element {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     
     // Validation
     if (password !== confirmPassword) {
@@ -48,7 +50,12 @@ export default function Register(): JSX.Element {
     });
     
     if (result.success) {
-      navigate("/dashboard");
+      if (result.message) {
+        setSuccess(result.message);
+      } else {
+        // Auto-login case (shouldn't happen with new flow)
+        navigate("/dashboard");
+      }
     } else {
       setError(result.error || "Registration failed");
     }
@@ -237,6 +244,13 @@ export default function Register(): JSX.Element {
                   </Label>
                 </div>
               </div>
+
+              {/* Success Message */}
+              {success && (
+                <div className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-950/50 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                  {success}
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (

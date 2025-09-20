@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getSupabaseClient } from '@/lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -22,7 +24,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string }>;
+  register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => void;
 }
 
@@ -44,88 +46,141 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from token on app start
+  // Load user from Supabase session on app start
   useEffect(() => {
+    let subscription: any = null;
+    
     const initializeAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        try {
-          const response = await fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+      try {
+        const supabase = await getSupabaseClient();
+        
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || session.user.email || '',
           });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setUser(data.user);
-          } else {
-            localStorage.removeItem('auth_token');
-          }
-        } catch (error) {
-          console.error('Failed to validate token:', error);
-          localStorage.removeItem('auth_token');
         }
+        
+        // Listen for auth changes
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+          async (event: string, session: any) => {
+            if (session?.user) {
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata?.full_name || session.user.email || '',
+              });
+            } else {
+              setUser(null);
+            }
+          }
+        );
+        
+        subscription = authSubscription;
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const login = async (credentials: LoginCredentials): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
+      const supabase = await getSupabaseClient();
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setUser(data.user);
-        localStorage.setItem('auth_token', data.token);
-        return { success: true };
-      } else {
-        return { success: false, error: data.message || 'Login failed' };
+      if (error) {
+        return { success: false, error: error.message };
       }
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.full_name || data.user.email || '',
+        });
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Login failed' };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
 
-  const register = async (credentials: RegisterCredentials): Promise<{ success: boolean; error?: string }> => {
+  const register = async (credentials: RegisterCredentials): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const supabase = await getSupabaseClient();
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            full_name: credentials.name,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
-        body: JSON.stringify(credentials),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setUser(data.user);
-        localStorage.setItem('auth_token', data.token);
-        return { success: true };
-      } else {
-        return { success: false, error: data.message || 'Registration failed' };
+      if (error) {
+        return { success: false, error: error.message };
       }
+
+      if (data.user) {
+        // Check if email confirmation is required or if user is immediately logged in
+        if (data.session) {
+          // Email confirmation is disabled, user is immediately logged in
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.full_name || data.user.email || '',
+          });
+          return { success: true };
+        } else {
+          // Email confirmation is required
+          return { 
+            success: true,
+            message: 'Registration successful! Please check your email and click the confirmation link to activate your account.'
+          };
+        }
+      }
+      
+      return { success: false, error: 'Registration failed' };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('auth_token');
+  const logout = async () => {
+    try {
+      const supabase = await getSupabaseClient();
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      setUser(null);
+    }
   };
 
   const value: AuthContextType = {
