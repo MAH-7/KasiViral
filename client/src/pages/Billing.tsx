@@ -61,73 +61,15 @@ export default function Billing(): JSX.Element {
 
   const currentPlan = plans[selectedPlan];
 
-  // Simulate successful payment processing for development
-  const simulatePaymentSuccess = async () => {
+  // Handle secure Stripe checkout
+  const handleCheckout = async (plan: 'monthly' | 'annual') => {
     setIsProcessing(true);
-    
-    try {
-      // Calculate expiration date based on plan
-      const now = new Date();
-      const expiresAt = new Date(now);
-      if (selectedPlan === 'monthly') {
-        expiresAt.setMonth(now.getMonth() + 1);
-      } else {
-        expiresAt.setFullYear(now.getFullYear() + 1);
-      }
-
-      // Get auth token for API call
-      const supabase = await getSupabaseClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        throw new Error('No authentication token available');
-      }
-
-      // Call development endpoint to activate subscription
-      const response = await fetch('/api/subscription/dev-activate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          plan: selectedPlan,
-          expiresAt: expiresAt.toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Payment processing failed: ${response.statusText}`);
-      }
-
-      // Success! Invalidate subscription cache and redirect
-      invalidateSubscription();
-      
-      // Small delay to let cache update
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
-      
-    } catch (error) {
-      console.error('Payment simulation failed:', error);
-      alert('Payment processing failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+    navigate(`/subscribe?plan=${plan}`);
+    setIsProcessing(false);
   };
 
-  const handleCardSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    simulatePaymentSuccess();
-  };
-
-  const handleFPXSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBank) {
-      alert("Please select a bank");
-      return;
-    }
-    simulatePaymentSuccess();
+  const handlePlanSelect = (plan: 'monthly' | 'annual') => {
+    handleCheckout(plan);
   };
 
   return (
@@ -247,112 +189,67 @@ export default function Billing(): JSX.Element {
                   <div className="text-center space-y-2 mb-6">
                     <h3 className="font-semibold">Pay with Credit or Debit Card</h3>
                     <p className="text-sm text-muted-foreground">Secure payment powered by Stripe</p>
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                      ⚠️ Note: This will be integrated with Stripe Elements for secure card processing
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                      💳 Secure card processing powered by Stripe
                     </div>
                   </div>
                   
-                  <form onSubmit={handleCardSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="card-name">Cardholder Name</Label>
-                      <Input
-                        id="card-name"
-                        placeholder="John Doe"
-                        value={cardName}
-                        onChange={(e) => setCardName(e.target.value)}
-                        data-testid="input-card-name"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="card-number">Card Number</Label>
-                      <Input
-                        id="card-number"
-                        placeholder="1234 5678 9012 3456"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        data-testid="input-card-number"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input
-                          id="expiry"
-                          placeholder="MM/YY"
-                          value={expiryDate}
-                          onChange={(e) => setExpiryDate(e.target.value)}
-                          data-testid="input-expiry"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          value={cvv}
-                          onChange={(e) => setCvv(e.target.value)}
-                          data-testid="input-cvv"
-                          required
-                        />
-                      </div>
-                    </div>
-
+                  <div className="space-y-4">
                     <Button
-                      type="submit"
+                      onClick={() => handlePlanSelect(selectedPlan)}
+                      disabled={isProcessing}
                       className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-lg py-3"
                       data-testid="button-pay-card"
                     >
-                      Pay {currentPlan.price} with Card
+                      {isProcessing ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Processing...
+                        </div>
+                      ) : (
+                        `Continue to Secure Payment - ${currentPlan.price}`
+                      )}
                     </Button>
-                  </form>
+                  </div>
                 </TabsContent>
 
                 {/* FPX Payment Tab */}
                 <TabsContent value="fpx" className="space-y-6">
                   <div className="text-center space-y-2 mb-6">
                     <h3 className="font-semibold">Pay with Malaysian Bank Account</h3>
-                    <p className="text-sm text-muted-foreground">Secure online banking transfer via FPX</p>
+                    <p className="text-sm text-muted-foreground">FPX available after going live - currently sandbox mode</p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                      🏦 FPX will be available when we move to live mode. For now, please use card payment.
+                    </div>
                   </div>
 
-                  <form onSubmit={handleFPXSubmit} className="space-y-6">
+                  <div className="space-y-6 opacity-50">
                     <div className="space-y-3">
-                      <Label className="text-sm font-medium">Select Your Bank</Label>
+                      <Label className="text-sm font-medium">Malaysian Banks (Coming Soon)</Label>
                       <div className="grid grid-cols-2 gap-3">
                         {malaysianBanks.map((bank) => (
-                          <button
+                          <div
                             key={bank.id}
-                            type="button"
-                            onClick={() => setSelectedBank(bank.id)}
-                            className={`p-4 border-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center gap-3 text-left ${
-                              selectedBank === bank.id
-                                ? "border-primary bg-primary/5"
-                                : `border-border hover:border-primary/50 ${bank.color}`
-                            }`}
+                            className={`p-4 border-2 rounded-lg flex items-center gap-3 text-left border-border ${bank.color} cursor-not-allowed`}
                             data-testid={`bank-${bank.id}`}
                           >
                             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white border">
                               <span className="text-lg">{bank.logo}</span>
                             </div>
                             <span className="font-medium text-sm">{bank.name}</span>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>
 
                     <Button
-                      type="submit"
-                      disabled={!selectedBank}
-                      className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-lg py-3 disabled:opacity-50 disabled:hover:scale-100"
+                      disabled
+                      className="w-full gradient-primary text-white opacity-50 cursor-not-allowed text-lg py-3"
                       data-testid="button-pay-fpx"
                     >
-                      Pay {currentPlan.price} with FPX
+                      FPX Coming Soon in Live Mode
                     </Button>
-                  </form>
+                  </div>
                 </TabsContent>
               </Tabs>
 

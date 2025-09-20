@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 import { storage } from "./storage";
 import { insertSubscriptionSchema } from "@shared/schema";
 
@@ -9,6 +11,32 @@ const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// KasiViralPro pricing - Use pre-created Stripe price IDs
+const PRICING = {
+  monthly: {
+    priceId: process.env.STRIPE_PRICE_MONTHLY!,
+    displayAmount: "RM20",
+    interval: "month",
+  },
+  annual: {
+    priceId: process.env.STRIPE_PRICE_ANNUAL!,
+    displayAmount: "RM200",
+    interval: "year",
+    savings: "RM40", // Save RM40 compared to 12 months
+  },
+};
+
+// Validate price IDs are configured
+if (!process.env.STRIPE_PRICE_MONTHLY || !process.env.STRIPE_PRICE_ANNUAL) {
+  throw new Error('Missing required Stripe price IDs: STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL');
+}
 
 // Extended Request interface to include user info
 interface AuthenticatedRequest extends Request {
@@ -196,6 +224,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   }
+
+  // Stripe subscription endpoints
+  app.get("/api/stripe/prices", (req: Request, res: Response) => {
+    res.json({
+      monthly: {
+        priceId: PRICING.monthly.priceId,
+        displayAmount: PRICING.monthly.displayAmount,
+        interval: PRICING.monthly.interval,
+      },
+      annual: {
+        priceId: PRICING.annual.priceId,
+        displayAmount: PRICING.annual.displayAmount,
+        interval: PRICING.annual.interval,
+        savings: PRICING.annual.savings,
+      },
+    });
+  });
+
+  app.post("/api/stripe/create-subscription", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const userEmail = req.user!.email;
+      const userName = req.user!.user_metadata?.full_name || userEmail;
+      const { plan } = req.body; // 'monthly' or 'annual'
+
+      if (!plan || !['monthly', 'annual'].includes(plan)) {
+        return res.status(400).json({ error: 'Invalid plan. Must be "monthly" or "annual"' });
+      }
+
+      // Check if user already has an active subscription
+      const existingSubscription = await storage.getSubscriptionByUserId(userId);
+      if (existingSubscription && existingSubscription.status === 'active') {
+        return res.status(400).json({ error: 'User already has an active subscription' });
+      }
+
+      // Create or retrieve Stripe customer
+      let stripeCustomerId = existingSubscription?.stripeCustomerId;
+      
+      if (!stripeCustomerId) {
+        const customer = await stripe.customers.create({
+          email: userEmail,
+          name: userName,
+          metadata: {
+            supabaseUserId: userId,
+          },
+        });
+        stripeCustomerId = customer.id;
+      }
+
+      // Create subscription in Stripe using pre-created price IDs
+      const pricing = PRICING[plan as 'monthly' | 'annual'];
+
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: pricing.priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          payment_method_types: ['card'],
+          save_default_payment_method: 'on_subscription',
+        },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      // Create INACTIVE subscription in database - will be activated via webhook
+      // Set a temporary expiresAt that will be updated when payment succeeds
+      const tempExpiresAt = new Date();
+      tempExpiresAt.setDate(tempExpiresAt.getDate() + 1); // 1 day temp
+
+      await storage.upsertSubscription({
+        userId,
+        plan: plan as 'monthly' | 'annual',
+        status: 'inactive', // Start as inactive until payment confirms
+        stripeCustomerId,
+        stripeSubscriptionId: subscription.id,
+        priceId: pricing.priceId,
+        expiresAt: tempExpiresAt,
+      });
+
+      const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = (latestInvoice as any).payment_intent as Stripe.PaymentIntent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: paymentIntent.client_secret,
+        status: subscription.status,
+      });
+
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      res.status(500).json({ error: 'Failed to create subscription' });
+    }
+  });
+
+  // Stripe webhook endpoint - requires raw body parsing
+  app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+
+    let event: Stripe.Event;
+
+    try {
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
+        // Verify webhook signature for security
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      } else {
+        // In development without webhook secret, parse directly (less secure)
+        console.warn('STRIPE_WEBHOOK_SECRET not set - webhook signature verification skipped');
+        event = JSON.parse(req.body.toString());
+      }
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return res.status(400).send('Webhook signature verification failed');
+    }
+
+    try {
+      switch (event.type) {
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice;
+          const subscriptionId = typeof (invoice as any).subscription === 'string' ? (invoice as any).subscription : (invoice as any).subscription?.id;
+          
+          if (subscriptionId) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+            const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+            
+            if (customer.metadata?.supabaseUserId) {
+              // Activate subscription and set proper expiry from Stripe
+              const expiresAt = new Date((subscription as any).current_period_end * 1000);
+              
+              await storage.upsertSubscription({
+                userId: customer.metadata.supabaseUserId,
+                plan: subscription.items.data[0].price.recurring?.interval === 'month' ? 'monthly' : 'annual',
+                status: 'active',
+                stripeCustomerId: customerId,
+                stripeSubscriptionId: subscription.id,
+                priceId: subscription.items.data[0].price.id,
+                expiresAt,
+              });
+              
+              console.log(`Activated subscription for user: ${customer.metadata.supabaseUserId}, expires: ${expiresAt}`);
+            }
+          }
+          break;
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice;
+          const subscriptionId = typeof (invoice as any).subscription === 'string' ? (invoice as any).subscription : (invoice as any).subscription?.id;
+          
+          if (subscriptionId) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+            const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+            
+            if (customer.metadata?.supabaseUserId) {
+              await storage.updateSubscriptionStatus(customer.metadata.supabaseUserId, 'inactive');
+              console.log(`Deactivated subscription for user: ${customer.metadata.supabaseUserId}`);
+            }
+          }
+          break;
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription;
+          const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+          const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+          
+          if (customer.metadata?.supabaseUserId) {
+            await storage.updateSubscriptionStatus(customer.metadata.supabaseUserId, 'canceled');
+            console.log(`Canceled subscription for user: ${customer.metadata.supabaseUserId}`);
+          }
+          break;
+        }
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
 
   // Authenticated registration endpoint to create user and default subscription for new users
   app.post("/api/auth/register", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {

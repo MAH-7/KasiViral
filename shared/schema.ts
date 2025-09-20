@@ -14,7 +14,10 @@ export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull().unique(), // Supabase user ID
   plan: text("plan", { enum: ["monthly", "annual"] }).notNull(),
-  status: text("status", { enum: ["active", "inactive"] }).notNull().default("inactive"),
+  status: text("status", { enum: ["active", "inactive", "canceled"] }).notNull().default("inactive"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  priceId: text("price_id"), // Stripe price ID for the subscription
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -56,10 +59,18 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).pick({
   userId: true,
   plan: true,
+  status: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  priceId: true,
   expiresAt: true,
 }).extend({
   userId: z.string().min(1, "User ID is required"),
   plan: z.enum(["monthly", "annual"]),
+  status: z.enum(["active", "inactive", "canceled"]).optional(),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
+  priceId: z.string().optional(),
   expiresAt: z.coerce.date(),
 });
 

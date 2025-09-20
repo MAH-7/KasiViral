@@ -14,6 +14,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import AuthConfirm from "@/pages/AuthConfirm";
 import TermsOfService from "@/pages/TermsOfService";
 import Billing from "@/pages/Billing";
+import Subscribe from "@/pages/Subscribe";
 import Dashboard from "@/pages/Dashboard";
 import Settings from "@/pages/Settings";
 
@@ -32,6 +33,13 @@ function Router() {
         <BillingRoute>
           <Billing />
         </BillingRoute>
+      </Route>
+      
+      {/* Stripe subscription checkout */}
+      <Route path="/subscribe">
+        <AuthenticatedRoute>
+          <Subscribe />
+        </AuthenticatedRoute>
       </Route>
       
       {/* Protected dashboard - only for users with active subscription */}

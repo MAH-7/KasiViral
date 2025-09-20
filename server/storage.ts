@@ -12,6 +12,7 @@ export interface IStorage {
   getSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
   upsertSubscription(subscription: InsertSubscription): Promise<Subscription>;
   createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscriptionStatus(userId: string, status: 'active' | 'inactive' | 'canceled'): Promise<Subscription | undefined>;
   isSubscriptionActive(userId: string): Promise<boolean>;
   createThread(thread: InsertThread): Promise<Thread>;
   getThreadsByUserId(userId: string, limit?: number): Promise<Thread[]>;
@@ -20,6 +21,7 @@ export interface IStorage {
   deleteThread(threadId: number, userId: string): Promise<boolean>;
   createUsageEvent(usageEvent: InsertOpenaiUsageEvent): Promise<OpenaiUsageEvent>;
   getMonthlySpendUsd(userId: string, periodStart: Date, periodEnd: Date): Promise<number>;
+  getUserMonthlySpending(userId: string): Promise<number>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -108,17 +110,21 @@ export class DrizzleStorage implements IStorage {
 
   async upsertSubscription(subscription: InsertSubscription): Promise<Subscription> {
     // Use atomic upsert to avoid race conditions
+    // Do NOT forcibly set status to active - preserve the provided status
     const result = await db
       .insert(subscriptions)
       .values({
         ...subscription,
-        status: "active",
+        status: subscription.status || "inactive", // Default to inactive if not specified
       })
       .onConflictDoUpdate({
         target: subscriptions.userId,
         set: {
           plan: subscription.plan,
-          status: "active",
+          status: subscription.status || "inactive", 
+          stripeCustomerId: subscription.stripeCustomerId,
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          priceId: subscription.priceId,
           expiresAt: subscription.expiresAt,
         },
       })
@@ -147,6 +153,16 @@ export class DrizzleStorage implements IStorage {
       }
       throw new Error('Failed to create or retrieve subscription');
     }
+    
+    return result[0];
+  }
+
+  async updateSubscriptionStatus(userId: string, status: 'active' | 'inactive' | 'canceled'): Promise<Subscription | undefined> {
+    const result = await db
+      .update(subscriptions)
+      .set({ status })
+      .where(eq(subscriptions.userId, userId))
+      .returning();
     
     return result[0];
   }
