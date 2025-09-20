@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,11 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HeaderSection } from "./sections/HeaderSection";
 import { Badge } from "@/components/ui/badge";
 import { CheckIcon, CreditCard, Building2, Shield, ArrowLeft } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export default function Billing(): JSX.Element {
   const [activeTab, setActiveTab] = useState("card");
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { invalidateSubscription } = useSubscription();
+  const [, navigate] = useLocation();
   
   // Card form state
   const [cardNumber, setCardNumber] = useState("");
@@ -56,10 +61,64 @@ export default function Billing(): JSX.Element {
 
   const currentPlan = plans[selectedPlan];
 
+  // Simulate successful payment processing for development
+  const simulatePaymentSuccess = async () => {
+    setIsProcessing(true);
+    
+    try {
+      // Calculate expiration date based on plan
+      const now = new Date();
+      const expiresAt = new Date(now);
+      if (selectedPlan === 'monthly') {
+        expiresAt.setMonth(now.getMonth() + 1);
+      } else {
+        expiresAt.setFullYear(now.getFullYear() + 1);
+      }
+
+      // Get auth token for API call
+      const supabase = await getSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No authentication token available');
+      }
+
+      // Call development endpoint to activate subscription
+      const response = await fetch('/api/subscription/dev-activate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          expiresAt: expiresAt.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Payment processing failed: ${response.statusText}`);
+      }
+
+      // Success! Invalidate subscription cache and redirect
+      invalidateSubscription();
+      
+      // Small delay to let cache update
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 500);
+      
+    } catch (error) {
+      console.error('Payment simulation failed:', error);
+      alert('Payment processing failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleCardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement Stripe card payment
-    console.log("Card payment attempted:", { plan: selectedPlan, amount: currentPlan.amount });
+    simulatePaymentSuccess();
   };
 
   const handleFPXSubmit = (e: React.FormEvent) => {
@@ -68,8 +127,7 @@ export default function Billing(): JSX.Element {
       alert("Please select a bank");
       return;
     }
-    // TODO: Implement Stripe FPX payment
-    console.log("FPX payment attempted:", { bank: selectedBank, plan: selectedPlan, amount: currentPlan.amount });
+    simulatePaymentSuccess();
   };
 
   return (

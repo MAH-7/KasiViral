@@ -3,11 +3,13 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, X, HelpCircle, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export const HeaderSection = (): JSX.Element => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const { isLoggedIn, user, logout } = useAuth();
+  const { clearSubscriptionCache } = useSubscription();
 
   // Different navigation items based on login state
   const guestNavigationItems = [
@@ -40,6 +42,8 @@ export const HeaderSection = (): JSX.Element => {
   };
 
   const handleLogout = () => {
+    // Clear subscription cache before logging out
+    clearSubscriptionCache();
     logout();
     setIsMobileMenuOpen(false);
   };
