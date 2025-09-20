@@ -126,6 +126,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Silent usage limit middleware - checks spending limits without revealing them to users
+  async function checkUsageLimits(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id;
+      const MONTHLY_SPENDING_LIMIT_USD = 1.5; // Silent $1.5 monthly cap per user
+      
+      // Get current monthly spending
+      const currentSpending = await storage.getUserMonthlySpending(userId);
+      
+      // Check if user has exceeded spending limit
+      if (currentSpending >= MONTHLY_SPENDING_LIMIT_USD) {
+        // Return generic error message without revealing limits
+        console.log(`User ${userId} has exceeded monthly spending limit: $${currentSpending.toFixed(4)} >= $${MONTHLY_SPENDING_LIMIT_USD}`);
+        return res.status(429).json({ 
+          success: false,
+          error: 'Service is experiencing high demand. Please try again later.' 
+        });
+      }
+      
+      // Log usage tracking for monitoring
+      console.log(`User ${userId} monthly spending: $${currentSpending.toFixed(4)}/$${MONTHLY_SPENDING_LIMIT_USD}`);
+      
+      next();
+    } catch (error) {
+      console.error('Usage limit check error:', error);
+      // On error, allow request to continue to avoid blocking legitimate users
+      next();
+    }
+  }
+
   // TODO: Replace with webhook handlers for Stripe/payment processing
   // that verify signed payment events and activate subscriptions securely
 
@@ -259,9 +289,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Thread generation endpoint - requires active subscription
-  app.post("/api/generate-thread", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/generate-thread", verifyAuth, requireActiveSubscription, checkUsageLimits, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { topic, length } = req.body;
+      const { topic, length, language } = req.body;
       const userId = req.user!.id;
       
       // Validate input
@@ -273,11 +303,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Length must be one of: short, medium, long' });
       }
       
+      if (!language || !['english', 'malay'].includes(language)) {
+        return res.status(400).json({ error: 'Language must be one of: english, malay' });
+      }
+      
       // Import the OpenAI service dynamically to avoid import issues
       const { generateViralThread } = await import('./openai');
       
       // Generate thread using OpenAI
-      const result = await generateViralThread({ topic: topic.trim(), length });
+      const result = await generateViralThread({ topic: topic.trim(), length, language });
+      
+      // Track usage for cost monitoring and limits enforcement
+      if (result.usage) {
+        try {
+          await storage.createUsageEvent({
+            userId,
+            model: result.usage.model,
+            promptTokens: result.usage.promptTokens,
+            completionTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+            totalCostUsd: result.usage.totalCostUsd,
+          });
+          
+          console.log(`Recorded usage event for user ${userId}: ${result.usage.model} - $${result.usage.totalCostUsd.toFixed(6)}`);
+        } catch (usageError) {
+          // Log the error but don't fail the request - thread generation was successful
+          console.error('Failed to record usage event:', usageError);
+        }
+      }
       
       // Save the thread to database
       const savedThread = await storage.createThread({
@@ -289,10 +342,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tweetCount: result.tweetCount,
       });
       
+      // Remove usage data from response to maintain "silent" cost control policy
+      const { usage, ...publicResult } = result;
+      
       res.json({
         success: true,
         data: {
-          ...result,
+          ...publicResult,
           id: savedThread.id,
           createdAt: savedThread.createdAt,
           isFavorite: savedThread.isFavorite,

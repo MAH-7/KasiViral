@@ -14,6 +14,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export interface ThreadGenerationRequest {
   topic: string;
   length: 'short' | 'medium' | 'long';
+  language: 'english' | 'malay';
+  maxTokens?: number; // Optional token limit for cost control
 }
 
 // Personality modes for dynamic thread generation
@@ -70,10 +72,68 @@ interface DynamicUserPromptParams {
   language: string;
 }
 
+// OpenAI Pricing (USD per 1K tokens) - Updated December 2024
+interface OpenAIPricing {
+  input: number; // per 1K tokens
+  output: number; // per 1K tokens
+}
+
+const OPENAI_PRICING: Record<string, OpenAIPricing> = {
+  'gpt-4o-mini': {
+    input: 0.00015,   // $0.00015 per 1K input tokens
+    output: 0.0006,   // $0.0006 per 1K output tokens
+  },
+  'gpt-3.5-turbo': {
+    input: 0.0005,    // $0.0005 per 1K input tokens
+    output: 0.0015,   // $0.0015 per 1K output tokens
+  },
+  'gpt-4o': {
+    input: 0.0025,    // $0.0025 per 1K input tokens
+    output: 0.01,     // $0.01 per 1K output tokens
+  }
+};
+
+// Usage tracking interfaces
+export interface UsageData {
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  totalCostUsd: number;
+}
+
 export interface ThreadResponse {
   thread: string;
   wordCount: number;
   tweetCount: number;
+  usage?: UsageData; // Optional usage tracking
+}
+
+// Cost calculation functions
+function calculateOpenAICost(model: string, promptTokens: number, completionTokens: number): number {
+  const pricing = OPENAI_PRICING[model];
+  if (!pricing) {
+    console.warn(`Unknown model pricing for: ${model}, using gpt-4o-mini rates`);
+    const fallbackPricing = OPENAI_PRICING['gpt-4o-mini'];
+    return (promptTokens / 1000) * fallbackPricing.input + (completionTokens / 1000) * fallbackPricing.output;
+  }
+  
+  const inputCost = (promptTokens / 1000) * pricing.input;
+  const outputCost = (completionTokens / 1000) * pricing.output;
+  return inputCost + outputCost;
+}
+
+function createUsageData(model: string, promptTokens: number, completionTokens: number): UsageData {
+  const totalTokens = promptTokens + completionTokens;
+  const totalCostUsd = calculateOpenAICost(model, promptTokens, completionTokens);
+  
+  return {
+    model,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    totalCostUsd
+  };
 }
 
 // Utility functions for accurate counting
@@ -332,7 +392,7 @@ ${isEnglish ?
 
 export async function generateViralThread(request: ThreadGenerationRequest): Promise<ThreadResponse> {
   try {
-    const { topic, length } = request;
+    const { topic, length, language, maxTokens } = request;
     
     // Viral-optimized length specifications based on performance data
     const lengthSpecs = {
@@ -343,20 +403,9 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
     
     const spec = lengthSpecs[length];
     
-    // Detect language - prioritize Bahasa Malaysia detection first
-    const hasIndonesianWords = /\b(bisa|banget|nggak|gak|kamu|aja|kok|ngomong|karena|ngobrol|kayak|soalnya|makanya|biar|gua|gue|loe|lu)\b/i.test(topic);
-    
-    // Comprehensive Malaysian words detection
-    const hasMalaysianWords = /\b(jom|tak|tidak|awak|anda|boleh|sangat|kerana|sebab|tahu|esok|lah|jer|kan|cara|nak|hendak|duit|ringgit|rm|buat|dapat|dapatkan|pertama|kedua|ketiga|memang|betul|bagus|best|power|gila|sihat|sakit|makan|minum|kerja|sekolah|rumah|kereta|motor|basikal|telefon|handphone|hp|komputer|laptop|internet|wifi|facebook|instagram|tiktok|youtube|whatsapp|telegram)\b/i.test(topic);
-    
-    // Common Malay words that could be either Malaysian or Indonesian (but if no Indonesian markers, assume Malaysian)
-    const hasCommonMalayWords = /\b(dalam|dengan|untuk|yang|ini|itu|akan|sudah|buat|macam|mana|bila|masa|saya|kita|mereka|dia|apa|kenapa|bagaimana|dimana|kapan|siapa|berapa|sudah|belum|pernah|selalu|sering|kadang|jarang|tidak|bukan|atau|dan|tetapi|tapi|kalau|jika|sebab|kerana|oleh|dari|ke|di|pada|tentang|seperti|sama|lain|semua|setiap|beberapa|satu|dua|tiga|empat|lima|enam|tujuh|lapan|sembilan|sepuluh)\b/i.test(topic);
-    
-    // More comprehensive Bahasa Malaysia detection
-    const isBahasaMalaysia = hasMalaysianWords || 
-                           (!hasIndonesianWords && hasCommonMalayWords);
-    
-    const isEnglish = !isBahasaMalaysia && /^[a-zA-Z\s.,!?;:'"\-()0-9]+$/.test(topic);
+    // Use explicit language parameter from request
+    const isBahasaMalaysia = language === 'malay';
+    const isEnglish = language === 'english';
     
     // Randomly select personality and template for variety
     const selectedPersonality = getRandomPersonality();
@@ -365,13 +414,13 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
     const randomElements = getRandomElements();
     
     console.log(`Topic: "${topic}"`);
-    console.log(`Language detected: ${isBahasaMalaysia ? 'Bahasa Malaysia' : 'English'}`);
+    console.log(`Language selected: ${isBahasaMalaysia ? 'Bahasa Malaysia' : 'English'}`);
     console.log(`Generating thread with ${selectedPersonality.name} personality, ${selectedTemplate.name} template, ${selectedStyle} style`);
     
     // Create dynamic system prompt based on selected personality and template
-    const language = isBahasaMalaysia ? 'bahasa' : 'english';
-    const persona = selectedPersonality[language];
-    const template = selectedTemplate[language];
+    const promptLanguage = isBahasaMalaysia ? 'bahasa' : 'english';
+    const persona = selectedPersonality[promptLanguage];
+    const template = selectedTemplate[promptLanguage];
     
     const systemPrompt = createDynamicSystemPrompt({
       persona,
@@ -394,6 +443,7 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
 
     // Use optimized token limits based on thread length
     let response;
+    let modelUsed = "gpt-4o-mini";
     try {
       response = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Cost-effective and reliable
@@ -402,10 +452,11 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        max_tokens: spec.maxTokens,
+        max_tokens: maxTokens || spec.maxTokens,
       });
     } catch (primaryError) {
       console.warn('GPT-4o-mini unavailable, falling back to GPT-3.5-turbo:', primaryError);
+      modelUsed = "gpt-3.5-turbo";
       response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
@@ -413,7 +464,7 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        max_tokens: spec.maxTokens,
+        max_tokens: maxTokens || spec.maxTokens,
       });
     }
 
@@ -429,12 +480,27 @@ export async function generateViralThread(request: ThreadGenerationRequest): Pro
     const actualWordCount = countWords(threadContent);
     const actualTweetCount = countTweets(threadContent);
     
-    console.log(`Thread generated: ${actualWordCount} words, ${actualTweetCount} tweets (${length})`);
+    // Extract usage data and calculate costs
+    const usage = response.usage;
+    let usageData: UsageData | undefined;
+    
+    if (usage) {
+      usageData = createUsageData(
+        modelUsed,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0
+      );
+      console.log(`Thread generated: ${actualWordCount} words, ${actualTweetCount} tweets (${length})`);
+      console.log(`Usage: ${usage.prompt_tokens} prompt + ${usage.completion_tokens} completion = ${usage.total_tokens} tokens, Cost: $${usageData.totalCostUsd.toFixed(6)}`);
+    } else {
+      console.log(`Thread generated: ${actualWordCount} words, ${actualTweetCount} tweets (${length}) - No usage data available`);
+    }
 
     return {
       thread: threadContent,
       wordCount: actualWordCount,
-      tweetCount: actualTweetCount
+      tweetCount: actualTweetCount,
+      usage: usageData
     };
 
   } catch (error) {

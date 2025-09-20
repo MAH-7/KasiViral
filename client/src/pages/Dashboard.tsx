@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { HeaderSection } from "./sections/HeaderSection";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, Lightbulb, X } from "lucide-react";
+import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, X, Globe } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 type ThreadLength = "short" | "medium" | "long";
+type Language = "english" | "malay";
 
 interface Thread {
   id: number;
@@ -26,6 +27,7 @@ interface Thread {
 export default function Dashboard(): JSX.Element {
   const [topic, setTopic] = useState("");
   const [selectedLength, setSelectedLength] = useState<ThreadLength>("medium");
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>("english");
   const [generatedThread, setGeneratedThread] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,7 +90,8 @@ export default function Dashboard(): JSX.Element {
         },
         body: JSON.stringify({
           topic: topic.trim(),
-          length: selectedLength
+          length: selectedLength,
+          language: selectedLanguage
         }),
       });
 
@@ -279,18 +282,6 @@ export default function Dashboard(): JSX.Element {
   };
 
   // Quick topic suggestions
-  const quickTopics = [
-    "5 productivity hacks that changed my life",
-    "Why most people fail at building habits",
-    "AI tools every entrepreneur should know",
-    "Building a personal brand in 2024",
-    "Social media strategies that actually work",
-    "Remote work mistakes everyone makes"
-  ];
-
-  const handleQuickTopic = (quickTopic: string) => {
-    setTopic(quickTopic);
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
@@ -342,26 +333,40 @@ export default function Dashboard(): JSX.Element {
                   </p>
                 </div>
 
-                {/* Quick Topics */}
+                {/* Language Selection */}
                 <div className="space-y-3">
                   <Label className="text-base font-medium flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4" />
-                    Quick Topics
+                    <Globe className="w-4 h-4" />
+                    Language
                   </Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {quickTopics.map((quickTopic, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleQuickTopic(quickTopic)}
-                        className="p-2 text-left border border-border rounded-md hover:bg-muted/50 hover:border-primary/50 transition-all duration-200 text-xs"
-                        data-testid={`quick-topic-${index}`}
-                      >
-                        {quickTopic}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setSelectedLanguage("english")}
+                      className={`p-3 border-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2 ${
+                        selectedLanguage === "english"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      data-testid="language-english"
+                    >
+                      <span className="text-lg">🇺🇸</span>
+                      <span className="font-medium">English</span>
+                    </button>
+                    <button
+                      onClick={() => setSelectedLanguage("malay")}
+                      className={`p-3 border-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2 ${
+                        selectedLanguage === "malay"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      data-testid="language-malay"
+                    >
+                      <span className="text-lg">🇲🇾</span>
+                      <span className="font-medium">Bahasa Melayu</span>
+                    </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Click any topic above to use it as your starting point
+                    Choose your preferred language for the generated thread
                   </p>
                 </div>
 
@@ -415,12 +420,12 @@ export default function Dashboard(): JSX.Element {
             {/* Results Panel */}
             <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
                       Generated Thread
                       {generatedThread && (
-                        <Badge className="gradient-secondary text-white">
+                        <Badge className="gradient-secondary text-white w-fit">
                           {lengthOptions[selectedLength].name}
                         </Badge>
                       )}
@@ -430,7 +435,7 @@ export default function Dashboard(): JSX.Element {
                     </CardDescription>
                   </div>
                   {generatedThread && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 self-start sm:self-center">
                       <Button
                         variant="outline"
                         size="sm"

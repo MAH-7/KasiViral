@@ -1,5 +1,5 @@
-import { users, subscriptions, threads, type User, type InsertUser, type Subscription, type InsertSubscription, type Thread, type InsertThread } from "@shared/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { users, subscriptions, threads, openaiUsageEvents, type User, type InsertUser, type Subscription, type InsertSubscription, type Thread, type InsertThread, type OpenaiUsageEvent, type InsertOpenaiUsageEvent } from "@shared/schema";
+import { eq, desc, sql, and, gte, lte, sum } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -18,6 +18,8 @@ export interface IStorage {
   updateThreadFavorite(threadId: number, userId: string, isFavorite: boolean): Promise<Thread | undefined>;
   incrementThreadCopyCount(threadId: number, userId: string): Promise<Thread | undefined>;
   deleteThread(threadId: number, userId: string): Promise<boolean>;
+  createUsageEvent(usageEvent: InsertOpenaiUsageEvent): Promise<OpenaiUsageEvent>;
+  getMonthlySpendUsd(userId: string, periodStart: Date, periodEnd: Date): Promise<number>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -213,6 +215,44 @@ export class DrizzleStorage implements IStorage {
     
     // Return true only if exactly one row was deleted
     return result.length === 1;
+  }
+
+  async createUsageEvent(usageEvent: InsertOpenaiUsageEvent): Promise<OpenaiUsageEvent> {
+    const result = await db.insert(openaiUsageEvents).values({
+      userId: usageEvent.userId,
+      model: usageEvent.model,
+      promptTokens: usageEvent.promptTokens,
+      completionTokens: usageEvent.completionTokens,
+      totalTokens: usageEvent.totalTokens,
+      totalCostUsd: usageEvent.totalCostUsd.toString(), // Convert number to string for numeric field
+    }).returning();
+    return result[0];
+  }
+
+  async getMonthlySpendUsd(userId: string, periodStart: Date, periodEnd: Date): Promise<number> {
+    const result = await db
+      .select({ totalSpent: sum(openaiUsageEvents.totalCostUsd) })
+      .from(openaiUsageEvents)
+      .where(
+        and(
+          eq(openaiUsageEvents.userId, userId),
+          gte(openaiUsageEvents.createdAt, periodStart),
+          lte(openaiUsageEvents.createdAt, periodEnd)
+        )
+      );
+    
+    // sum() returns a string, so we need to convert to number
+    const spent = result[0]?.totalSpent || "0";
+    return parseFloat(spent);
+  }
+
+  // Get user's current monthly spending (current calendar month)
+  async getUserMonthlySpending(userId: string): Promise<number> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    return this.getMonthlySpendUsd(userId, startOfMonth, endOfMonth);
   }
 }
 
