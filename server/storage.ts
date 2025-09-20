@@ -1,14 +1,6 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
 import { users, subscriptions, type User, type InsertUser, type Subscription, type InsertSubscription } from "@shared/schema";
 import { eq } from "drizzle-orm";
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is required");
-}
-
-const sql = neon(process.env.DATABASE_URL);
-const db = drizzle(sql);
+import { db } from "./db";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;

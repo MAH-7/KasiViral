@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute, BillingRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute, BillingRoute, AuthenticatedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 
 import { Desktop } from "@/pages/Desktop";
@@ -39,11 +39,11 @@ function Router() {
         </ProtectedRoute>
       </Route>
       
-      {/* Protected settings - only for users with active subscription */}
+      {/* Authenticated settings - accessible to all logged in users */}
       <Route path="/settings">
-        <ProtectedRoute>
+        <AuthenticatedRoute>
           <Settings />
-        </ProtectedRoute>
+        </AuthenticatedRoute>
       </Route>
       
       <Route path="/terms" component={TermsOfService} />

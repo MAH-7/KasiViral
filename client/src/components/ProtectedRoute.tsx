@@ -71,6 +71,47 @@ interface BillingRouteProps {
   children: React.ReactNode;
 }
 
+interface AuthenticatedRouteProps {
+  children: React.ReactNode;
+}
+
+export function AuthenticatedRoute({ children }: AuthenticatedRouteProps) {
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  // Handle redirects in useEffect to avoid side effects during render
+  useEffect(() => {
+    if (authLoading) {
+      return; // Still loading
+    }
+
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+  }, [isLoggedIn, authLoading, navigate]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render children during redirects
+  if (!isLoggedIn) {
+    return null;
+  }
+
+  // User is authenticated (no subscription check)
+  return <>{children}</>;
+}
+
 export function BillingRoute({ children }: BillingRouteProps) {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const { isActive: hasActiveSubscription, isLoading: subscriptionLoading, isError } = useSubscription();

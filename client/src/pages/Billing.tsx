@@ -144,9 +144,9 @@ export default function Billing(): JSX.Element {
           {/* Back Navigation */}
           <div className="mb-6">
             <Button variant="ghost" size="sm" asChild data-testid="button-back">
-              <Link href="/login">
+              <Link href="/settings">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Login
+                Back to Settings
               </Link>
             </Button>
           </div>

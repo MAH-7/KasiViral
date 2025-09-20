@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeaderSection } from "./sections/HeaderSection";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Login(): JSX.Element {
@@ -25,12 +26,49 @@ export default function Login(): JSX.Element {
     const result = await login({ email, password });
     
     if (result.success) {
-      navigate("/dashboard");
+      // After successful login, wait a moment for subscription data to load
+      // then redirect based on subscription status
+      setTimeout(async () => {
+        try {
+          // Make a direct API call to check subscription status
+          const { getSupabaseClient } = await import("@/lib/supabase");
+          const client = await getSupabaseClient();
+          const { data: { session } } = await client.auth.getSession();
+          
+          if (session?.access_token) {
+            const response = await fetch('/api/subscription/me', {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (response.ok) {
+              const subscriptionData = await response.json();
+              if (subscriptionData.isActive) {
+                navigate("/dashboard");
+              } else {
+                navigate("/billing");
+              }
+            } else {
+              // If can't check subscription, default to billing
+              navigate("/billing");
+            }
+          } else {
+            navigate("/billing");
+          }
+        } catch (error) {
+          console.error('Error checking subscription after login:', error);
+          // If error, default to billing page
+          navigate("/billing");
+        } finally {
+          setIsLoading(false);
+        }
+      }, 1000); // Wait 1 second for auth state to settle
     } else {
       setError(result.error || "Login failed");
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
