@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { HeaderSection } from "./sections/HeaderSection";
 import { useAuth } from "@/contexts/AuthContext";
+import { handlePostAuthRedirect } from "@/lib/authRedirect";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function Register(): JSX.Element {
@@ -52,15 +53,15 @@ export default function Register(): JSX.Element {
     if (result.success) {
       if (result.message) {
         setSuccess(result.message);
+        setIsLoading(false);
       } else {
-        // Auto-login case (shouldn't happen with new flow)
-        navigate("/dashboard");
+        // Auto-login case - check subscription status and redirect accordingly
+        handlePostAuthRedirect(navigate, () => setIsLoading(false));
       }
     } else {
       setError(result.error || "Registration failed");
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (

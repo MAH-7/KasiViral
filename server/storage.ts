@@ -8,6 +8,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getSubscriptionByUserId(userId: string): Promise<Subscription | undefined>;
   upsertSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription>;
   isSubscriptionActive(userId: string): Promise<boolean>;
 }
 
@@ -49,6 +50,31 @@ export class DrizzleStorage implements IStorage {
         },
       })
       .returning();
+    return result[0];
+  }
+
+  async createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription> {
+    // Create inactive subscription for new users (race-safe with conflict handling)
+    const result = await db
+      .insert(subscriptions)
+      .values({
+        ...subscription,
+        status: "inactive",
+      })
+      .onConflictDoNothing({
+        target: subscriptions.userId,
+      })
+      .returning();
+    
+    // If conflict occurred (no rows returned), fetch the existing subscription
+    if (result.length === 0) {
+      const existing = await this.getSubscriptionByUserId(subscription.userId);
+      if (existing) {
+        return existing;
+      }
+      throw new Error('Failed to create or retrieve subscription');
+    }
+    
     return result[0];
   }
 

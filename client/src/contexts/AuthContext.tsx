@@ -155,9 +155,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             email: data.user.email || '',
             name: data.user.user_metadata?.full_name || data.user.email || '',
           });
+          
+          // Create database subscription record for new user
+          try {
+            const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.session.access_token}`,
+              },
+            });
+            
+            if (!response.ok) {
+              console.error('Failed to create database records:', await response.text());
+              // Continue anyway - user is already registered in Supabase
+            }
+          } catch (error) {
+            console.error('Error creating database records:', error);
+            // Continue anyway - user is already registered in Supabase
+          }
+          
           return { success: true };
         } else {
-          // Email confirmation is required
+          // Email confirmation is required - database record will be created on first login
+          // No session token available yet, so we'll create subscription record when they confirm email
           return { 
             success: true,
             message: 'Registration successful! Please check your email and click the confirmation link to activate your account.'

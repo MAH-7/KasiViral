@@ -61,17 +61,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subscription/me", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
-      const subscription = await storage.getSubscriptionByUserId(userId);
-      const isActive = await storage.isSubscriptionActive(userId);
+      let subscription = await storage.getSubscriptionByUserId(userId);
       
+      // Auto-create inactive subscription if none exists (for email-confirmed users)
       if (!subscription) {
-        return res.json({
-          status: 'inactive',
-          plan: null,
-          expiresAt: null,
-          isActive: false,
-        });
+        try {
+          const defaultExpiryDate = new Date();
+          defaultExpiryDate.setDate(defaultExpiryDate.getDate() + 30);
+          
+          subscription = await storage.createInactiveSubscription({
+            userId,
+            plan: 'monthly',
+            expiresAt: defaultExpiryDate,
+          });
+          
+          console.log(`Auto-created inactive subscription for user ${userId}`);
+        } catch (error) {
+          console.error('Error auto-creating subscription:', error);
+          // If creation fails, return default inactive state
+          return res.json({
+            status: 'inactive',
+            plan: null,
+            expiresAt: null,
+            isActive: false,
+          });
+        }
       }
+      
+      const isActive = await storage.isSubscriptionActive(userId);
       
       res.json({
         status: subscription.status,
@@ -145,6 +162,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   }
+
+  // Authenticated registration endpoint to create default subscription for new users
+  app.post("/api/auth/register", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      // Use authenticated user's ID from token, not from request body
+      const userId = req.user!.id;
+      const userEmail = req.user!.email;
+      
+      // Check if subscription already exists
+      const existingSubscription = await storage.getSubscriptionByUserId(userId);
+      if (existingSubscription) {
+        return res.json({ 
+          message: 'User already registered',
+          subscription: {
+            status: existingSubscription.status,
+            plan: existingSubscription.plan,
+            expiresAt: existingSubscription.expiresAt,
+          },
+        });
+      }
+      
+      // Create default inactive subscription with 30 days from now
+      const defaultExpiryDate = new Date();
+      defaultExpiryDate.setDate(defaultExpiryDate.getDate() + 30);
+      
+      const subscription = await storage.createInactiveSubscription({
+        userId,
+        plan: 'monthly',
+        expiresAt: defaultExpiryDate,
+      });
+      
+      res.json({
+        message: 'User registered successfully',
+        subscription: {
+          status: subscription.status,
+          plan: subscription.plan,
+          expiresAt: subscription.expiresAt,
+        },
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      res.status(500).json({ error: 'Failed to register user' });
+    }
+  });
 
   const httpServer = createServer(app);
 
