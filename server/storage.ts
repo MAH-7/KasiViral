@@ -1,5 +1,5 @@
-import { users, subscriptions, type User, type InsertUser, type Subscription, type InsertSubscription } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, subscriptions, threads, type User, type InsertUser, type Subscription, type InsertSubscription, type Thread, type InsertThread } from "@shared/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -13,6 +13,11 @@ export interface IStorage {
   upsertSubscription(subscription: InsertSubscription): Promise<Subscription>;
   createInactiveSubscription(subscription: InsertSubscription): Promise<Subscription>;
   isSubscriptionActive(userId: string): Promise<boolean>;
+  createThread(thread: InsertThread): Promise<Thread>;
+  getThreadsByUserId(userId: string, limit?: number): Promise<Thread[]>;
+  updateThreadFavorite(threadId: number, userId: string, isFavorite: boolean): Promise<Thread | undefined>;
+  incrementThreadCopyCount(threadId: number, userId: string): Promise<Thread | undefined>;
+  deleteThread(threadId: number, userId: string): Promise<boolean>;
 }
 
 export class DrizzleStorage implements IStorage {
@@ -153,6 +158,61 @@ export class DrizzleStorage implements IStorage {
     
     const now = new Date();
     return subscription.status === "active" && subscription.expiresAt > now;
+  }
+
+  async createThread(insertThread: InsertThread): Promise<Thread> {
+    const result = await db.insert(threads).values(insertThread).returning();
+    return result[0];
+  }
+
+  async getThreadsByUserId(userId: string, limit: number = 50): Promise<Thread[]> {
+    const result = await db
+      .select()
+      .from(threads)
+      .where(eq(threads.userId, userId))
+      .orderBy(desc(threads.createdAt))
+      .limit(limit);
+    return result;
+  }
+
+  async updateThreadFavorite(threadId: number, userId: string, isFavorite: boolean): Promise<Thread | undefined> {
+    const result = await db
+      .update(threads)
+      .set({ isFavorite })
+      .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      .returning();
+    
+    // Ensure exactly one row was affected
+    if (result.length === 0) {
+      return undefined;
+    }
+    
+    return result[0];
+  }
+
+  async incrementThreadCopyCount(threadId: number, userId: string): Promise<Thread | undefined> {
+    const result = await db
+      .update(threads)
+      .set({ copyCount: sql`copy_count + 1` })
+      .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      .returning();
+    
+    // Ensure exactly one row was affected
+    if (result.length === 0) {
+      return undefined;
+    }
+    
+    return result[0];
+  }
+
+  async deleteThread(threadId: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(threads)
+      .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      .returning();
+    
+    // Return true only if exactly one row was deleted
+    return result.length === 1;
   }
 }
 

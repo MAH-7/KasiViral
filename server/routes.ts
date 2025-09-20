@@ -262,6 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-thread", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { topic, length } = req.body;
+      const userId = req.user!.id;
       
       // Validate input
       if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
@@ -278,9 +279,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate thread using OpenAI
       const result = await generateViralThread({ topic: topic.trim(), length });
       
+      // Save the thread to database
+      const savedThread = await storage.createThread({
+        userId,
+        topic: topic.trim(),
+        content: result.thread,
+        length: length as 'short' | 'medium' | 'long',
+        wordCount: result.wordCount,
+        tweetCount: result.tweetCount,
+      });
+      
       res.json({
         success: true,
-        data: result
+        data: {
+          ...result,
+          id: savedThread.id,
+          createdAt: savedThread.createdAt,
+          isFavorite: savedThread.isFavorite,
+          copyCount: savedThread.copyCount,
+        }
       });
       
     } catch (error) {
@@ -306,6 +323,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         error: 'Failed to generate thread. Please try again.' 
+      });
+    }
+  });
+
+  // Recent threads endpoint - requires active subscription
+  app.get("/api/recent-threads", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      
+      // Validate limit parameter
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        return res.status(400).json({ error: 'Limit must be a number between 1 and 100' });
+      }
+      
+      const threads = await storage.getThreadsByUserId(userId, limit);
+      
+      res.json({
+        success: true,
+        data: threads
+      });
+      
+    } catch (error) {
+      console.error('Error fetching recent threads:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch recent threads. Please try again.' 
+      });
+    }
+  });
+
+  // Thread action endpoints
+  app.put("/api/threads/:id/favorite", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const threadId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const { isFavorite } = req.body;
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: 'Invalid thread ID' });
+      }
+      
+      if (typeof isFavorite !== 'boolean') {
+        return res.status(400).json({ error: 'isFavorite must be a boolean' });
+      }
+      
+      const updatedThread = await storage.updateThreadFavorite(threadId, userId, isFavorite);
+      
+      if (!updatedThread) {
+        return res.status(404).json({ error: 'Thread not found or not accessible' });
+      }
+      
+      res.json({
+        success: true,
+        data: updatedThread
+      });
+      
+    } catch (error) {
+      console.error('Error updating thread favorite:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to update thread favorite. Please try again.' 
+      });
+    }
+  });
+
+  app.put("/api/threads/:id/copy", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const threadId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: 'Invalid thread ID' });
+      }
+      
+      const updatedThread = await storage.incrementThreadCopyCount(threadId, userId);
+      
+      if (!updatedThread) {
+        return res.status(404).json({ error: 'Thread not found or not accessible' });
+      }
+      
+      res.json({
+        success: true,
+        data: updatedThread
+      });
+      
+    } catch (error) {
+      console.error('Error incrementing copy count:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to update copy count. Please try again.' 
+      });
+    }
+  });
+
+  app.delete("/api/threads/:id", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const threadId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      if (isNaN(threadId)) {
+        return res.status(400).json({ error: 'Invalid thread ID' });
+      }
+      
+      const deleted = await storage.deleteThread(threadId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: 'Thread not found or not accessible' });
+      }
+      
+      res.json({
+        success: true,
+        message: 'Thread deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to delete thread. Please try again.' 
       });
     }
   });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { HeaderSection } from "./sections/HeaderSection";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, Star, Lightbulb } from "lucide-react";
+import { Sparkles, Copy, Download, RefreshCw, Zap, Clock, AlignLeft, Search, Eye, RotateCcw, Trash2, Star, Lightbulb, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type ThreadLength = "short" | "medium" | "long";
+
+interface Thread {
+  id: number;
+  topic: string;
+  content: string;
+  length: ThreadLength;
+  wordCount: number;
+  tweetCount: number;
+  isFavorite: boolean;
+  copyCount: number;
+  createdAt: string;
+}
 
 export default function Dashboard(): JSX.Element {
   const [topic, setTopic] = useState("");
@@ -17,6 +30,9 @@ export default function Dashboard(): JSX.Element {
   const [generatedThread, setGeneratedThread] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [recentThreads, setRecentThreads] = useState<Thread[]>([]);
+  const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+  const [viewingThread, setViewingThread] = useState<Thread | null>(null);
 
   const lengthOptions = {
     short: {
@@ -82,6 +98,8 @@ export default function Dashboard(): JSX.Element {
       
       if (result.success && result.data) {
         setGeneratedThread(result.data.thread);
+        // Refresh recent threads to show the newly generated thread
+        fetchRecentThreads();
       } else {
         throw new Error('Invalid response format');
       }
@@ -110,47 +128,164 @@ export default function Dashboard(): JSX.Element {
     document.body.removeChild(element);
   };
 
-  // Sample recent threads data (replace with real data later)
-  const recentThreads = [
-    {
-      id: 1,
-      topic: "Benefits of morning exercise for productivity",
-      content: "🧵 THREAD: Why morning exercise is a game-changer for your productivity...\n\n1/ Starting your day with exercise releases endorphins that boost your mood and energy levels for the entire day.\n\n2/ Studies show that people who exercise in the morning are 23% more productive at work and make better decisions.\n\n3/ Your brain gets increased blood flow and oxygen, leading to improved focus and cognitive function throughout the day.",
-      length: "medium" as ThreadLength,
-      wordCount: 587,
-      createdAt: "2 hours ago",
-      isFavorite: true,
-      copyCount: 12
-    },
-    {
-      id: 2,
-      topic: "AI trends that will shape 2024",
-      content: "🧵 THREAD: The AI trends that will completely reshape how we work in 2024...\n\n1/ AI agents are becoming mainstream - no longer just chatbots, but actual digital workers that can complete complex tasks.\n\n2/ Multimodal AI is exploding - combine text, images, video, and audio for unprecedented creativity and problem-solving.",
-      length: "long" as ThreadLength,
-      wordCount: 1247,
-      createdAt: "1 day ago",
-      isFavorite: false,
-      copyCount: 8
-    },
-    {
-      id: 3,
-      topic: "Remote work productivity hacks",
-      content: "🧵 THREAD: 5 remote work productivity hacks that changed my life...\n\n1/ Create a dedicated workspace - even if it's just a corner of your bedroom, make it sacred for work only.",
-      length: "short" as ThreadLength,
-      wordCount: 324,
-      createdAt: "3 days ago",
-      isFavorite: false,
-      copyCount: 5
+  // Helper function to get authentication token
+  const getAuthToken = async () => {
+    const { getSupabaseClient } = await import("@/lib/supabase");
+    const supabase = await getSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
     }
-  ];
+    
+    return session.access_token;
+  };
+
+  // Fetch recent threads from API
+  const fetchRecentThreads = async () => {
+    try {
+      const token = await getAuthToken();
+      
+      const response = await fetch('/api/recent-threads?limit=20', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch threads');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // Format the date for display
+        const formattedThreads = result.data.map((thread: any) => ({
+          ...thread,
+          createdAt: formatRelativeTime(new Date(thread.createdAt))
+        }));
+        setRecentThreads(formattedThreads);
+      }
+    } catch (error) {
+      console.error('Error fetching recent threads:', error);
+    } finally {
+      setIsLoadingThreads(false);
+    }
+  };
+
+  // Format relative time
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    if (diffInDays < 30) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  // Load recent threads on component mount
+  useEffect(() => {
+    fetchRecentThreads();
+  }, []);
 
   const filteredThreads = recentThreads.filter(thread =>
     thread.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCopyRecentThread = (content: string) => {
-    navigator.clipboard.writeText(content);
-    // TODO: Add toast notification
+  const handleCopyRecentThread = async (content: string, threadId: number) => {
+    try {
+      // Copy to clipboard
+      navigator.clipboard.writeText(content);
+      
+      // Update copy count via API
+      const token = await getAuthToken();
+      
+      const response = await fetch(`/api/threads/${threadId}/copy`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Refresh threads to show updated copy count
+        fetchRecentThreads();
+      }
+    } catch (error) {
+      console.error('Error updating copy count:', error);
+      // Still copy to clipboard even if API fails
+      navigator.clipboard.writeText(content);
+    }
+  };
+
+  const handleToggleFavorite = async (threadId: number, currentFavoriteStatus: boolean) => {
+    try {
+      const token = await getAuthToken();
+      
+      const response = await fetch(`/api/threads/${threadId}/favorite`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isFavorite: !currentFavoriteStatus
+        }),
+      });
+
+      if (response.ok) {
+        // Optimistically update the local state
+        setRecentThreads(prevThreads =>
+          prevThreads.map(thread =>
+            thread.id === threadId
+              ? { ...thread, isFavorite: !currentFavoriteStatus }
+              : thread
+          )
+        );
+      } else {
+        throw new Error('Failed to update favorite status');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      alert('Failed to update favorite status. Please try again.');
+    }
+  };
+
+  const handleDeleteThread = async (threadId: number) => {
+    if (!confirm('Are you sure you want to delete this thread? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = await getAuthToken();
+      
+      const response = await fetch(`/api/threads/${threadId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setRecentThreads(prevThreads =>
+          prevThreads.filter(thread => thread.id !== threadId)
+        );
+      } else {
+        throw new Error('Failed to delete thread');
+      }
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+      alert('Failed to delete thread. Please try again.');
+    }
   };
 
   const handleRegenerateThread = (threadTopic: string, threadLength: ThreadLength) => {
@@ -434,7 +569,7 @@ export default function Dashboard(): JSX.Element {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleCopyRecentThread(thread.content)}
+                            onClick={() => handleCopyRecentThread(thread.content, thread.id)}
                             data-testid={`copy-thread-${thread.id}`}
                           >
                             <Copy className="w-4 h-4" />
@@ -443,7 +578,7 @@ export default function Dashboard(): JSX.Element {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {/* TODO: Show full thread modal */}}
+                            onClick={() => setViewingThread(thread)}
                             data-testid={`view-thread-${thread.id}`}
                           >
                             <Eye className="w-4 h-4" />
@@ -462,7 +597,7 @@ export default function Dashboard(): JSX.Element {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700"
-                            onClick={() => {/* TODO: Delete thread */}}
+                            onClick={() => handleDeleteThread(thread.id)}
                             data-testid={`delete-thread-${thread.id}`}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -477,6 +612,89 @@ export default function Dashboard(): JSX.Element {
           </Card>
         </div>
       </div>
+
+      {/* Thread View Modal */}
+      {viewingThread && (
+        <Dialog open={!!viewingThread} onOpenChange={() => setViewingThread(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{viewingThread.topic}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewingThread(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogTitle>
+              <DialogDescription className="flex items-center gap-4 text-sm">
+                <Badge className={`${getLengthBadgeColor(viewingThread.length)}`}>
+                  {viewingThread.length.charAt(0).toUpperCase() + viewingThread.length.slice(1)}
+                </Badge>
+                <span>{viewingThread.wordCount} words</span>
+                <span>{viewingThread.tweetCount} tweets</span>
+                <span>{viewingThread.createdAt}</span>
+                <span>Copied {viewingThread.copyCount} times</span>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-6">
+                <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
+                  {viewingThread.content}
+                </pre>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleCopyRecentThread(viewingThread.content, viewingThread.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Thread
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const element = document.createElement("a");
+                    const file = new Blob([viewingThread.content], { type: 'text/plain' });
+                    element.href = URL.createObjectURL(file);
+                    element.download = `viral-thread-${viewingThread.topic.replace(/\s+/g, '-').toLowerCase()}.txt`;
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    handleRegenerateThread(viewingThread.topic, viewingThread.length);
+                    setViewingThread(null);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Regenerate
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleToggleFavorite(viewingThread.id, viewingThread.isFavorite)}
+                  className="flex items-center gap-2"
+                >
+                  <Star className={`w-4 h-4 ${viewingThread.isFavorite ? 'text-yellow-500 fill-current' : ''}`} />
+                  {viewingThread.isFavorite ? 'Unfavorite' : 'Favorite'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

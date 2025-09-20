@@ -59,22 +59,22 @@ Respond with JSON in this exact format:
 
 Make it engaging, informative, and shareable. Focus on providing real value while maintaining high engagement potential.`;
 
-    // Try with GPT-5 first, fallback to GPT-4 if unavailable
+    // Use GPT-4o-mini for cost-effective and reliable results
     let response;
     try {
       response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        model: "gpt-4o-mini", // Cost-effective and capable model
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        max_tokens: 2048, // Fixed: use max_tokens for chat completions, not max_completion_tokens
+        max_tokens: 2048,
       });
-    } catch (gpt5Error) {
-      console.warn('GPT-5 unavailable, falling back to GPT-4:', gpt5Error);
+    } catch (primaryError) {
+      console.warn('GPT-4o-mini unavailable, falling back to GPT-3.5-turbo:', primaryError);
       response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-3.5-turbo", // Fallback to GPT-3.5-turbo
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
