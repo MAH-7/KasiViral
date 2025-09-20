@@ -22,86 +22,124 @@ export interface ThreadResponse {
   tweetCount: number;
 }
 
+// Utility functions for accurate counting
+function countWords(text: string): number {
+  // Simple approach: split by whitespace and filter out empty strings
+  // This counts words consistently like most standard tools
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  return words.length;
+}
+
+function countCharacters(text: string): number {
+  // Count all characters including spaces and emojis
+  return text.length;
+}
+
+function countTweets(text: string): number {
+  // Count tweets by looking for numbered patterns like "1/", "2/", etc.
+  // Include both start-of-string and newline-prefixed patterns
+  const tweetPattern = /(?:^|\n)\d+\//g;
+  const matches = text.match(tweetPattern);
+  return matches ? matches.length : 1; // At least 1 tweet if no numbered pattern found
+}
+
 export async function generateViralThread(request: ThreadGenerationRequest): Promise<ThreadResponse> {
   try {
     const { topic, length } = request;
     
-    // Define length specifications
+    // Viral-optimized length specifications based on performance data
     const lengthSpecs = {
-      short: { wordCount: '200-400', tweetCount: '3-5', description: 'concise and punchy' },
-      medium: { wordCount: '500-800', tweetCount: '6-10', description: 'detailed and informative' },
-      long: { wordCount: '900-1500', tweetCount: '11-20', description: 'comprehensive and in-depth' }
+      short: { wordCount: '150-300', tweetCount: '3-5', description: 'quick and engaging', targetWords: 200, maxTokens: 800 },
+      medium: { wordCount: '350-500', tweetCount: '6-8', description: 'balanced and informative', targetWords: 400, maxTokens: 1200 },
+      long: { wordCount: '550-750', tweetCount: '9-12', description: 'comprehensive yet digestible', targetWords: 600, maxTokens: 1800 }
     };
     
     const spec = lengthSpecs[length];
     
-    const systemPrompt = `You are a viral Twitter thread generator expert. Create engaging, informative Twitter threads that maximize engagement and shareability.
+    // Optimized single-shot generation with precise viral-focused prompting
+    const systemPrompt = `You are a viral content expert and Twitter thread specialist. Create threads that maximize engagement, shareability, and completion rates.
 
-Guidelines:
-- Start with an attention-grabbing hook
-- Use numbered tweets (1/, 2/, 3/, etc.)
-- Include actionable insights and valuable information
-- Add emojis strategically for visual appeal
-- End with a call-to-action or thought-provoking question
-- Ensure each tweet is under 280 characters
-- Make it ${spec.description}
-- Target ${spec.wordCount} words total
-- Aim for ${spec.tweetCount} tweets
+THREAD SPECIFICATIONS FOR ${length.toUpperCase()}:
+📊 Target: ${spec.targetWords} words (${spec.wordCount} range)
+📱 Format: ${spec.tweetCount} tweets
+🎯 Style: ${spec.description}
+
+VIRAL CONTENT PRINCIPLES:
+${length === 'short' ? `
+• Hook with curiosity gap or surprising fact
+• Each tweet delivers immediate value
+• Use power words and emotional triggers
+• End with actionable takeaway` : length === 'medium' ? `
+• Strong narrative structure with clear progression  
+• Mix of insights, examples, and practical tips
+• Build momentum tweet by tweet
+• Include specific numbers/data when relevant` : `
+• Deep expertise demonstration with authority signals
+• Multiple angles and comprehensive coverage
+• Strategic use of stories, case studies, examples
+• Layer insights for different audience levels`}
+
+ENGAGEMENT OPTIMIZATION:
+• Start with hook that creates curiosity/urgency
+• Use numbered tweets (1/, 2/, 3/, etc.)
+• Strategic emoji placement (not overwhelming)
+• Specific, actionable insights over generic advice
+• Strong call-to-action or thought-provoking question
+• Each tweet under 280 characters
+• Natural conversation flow between tweets
 
 Respond with JSON in this exact format:
 {
-  "thread": "🧵 THREAD: [Topic]\\n\\n1/ [First tweet content]\\n\\n2/ [Second tweet content]\\n\\n[Continue with numbered tweets]",
-  "wordCount": [actual word count],
-  "tweetCount": [actual tweet count]
+  "thread": "🧵 THREAD: [Topic]\\n\\n1/ [First tweet content]\\n\\n2/ [Second tweet content]\\n\\n[Continue with numbered tweets]"
 }`;
 
     const userPrompt = `Create a viral Twitter thread about: "${topic}"
 
-Make it engaging, informative, and shareable. Focus on providing real value while maintaining high engagement potential.`;
+Target: ${spec.targetWords} words. Make it engaging, shareable, and valuable. Focus on what will actually get people to read, engage, and share.`;
 
-    // Use GPT-4o-mini for cost-effective and reliable results
+    // Use optimized token limits based on thread length
     let response;
     try {
       response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Cost-effective and capable model
+        model: "gpt-4o-mini", // Cost-effective and reliable
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        max_tokens: 2048,
+        max_tokens: spec.maxTokens,
       });
     } catch (primaryError) {
       console.warn('GPT-4o-mini unavailable, falling back to GPT-3.5-turbo:', primaryError);
       response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // Fallback to GPT-3.5-turbo
+        model: "gpt-3.5-turbo",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        max_tokens: 2048,
+        max_tokens: spec.maxTokens,
       });
     }
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
     
-    // Validate and coerce response structure with proper type checking
+    // Validate response structure
     if (!result.thread || typeof result.thread !== 'string') {
       throw new Error('Invalid thread content from OpenAI');
     }
+
+    // Calculate accurate counts
+    const threadContent = result.thread;
+    const actualWordCount = countWords(threadContent);
+    const actualTweetCount = countTweets(threadContent);
     
-    const wordCount = Number(result.wordCount);
-    const tweetCount = Number(result.tweetCount);
-    
-    if (isNaN(wordCount) || isNaN(tweetCount)) {
-      throw new Error('Invalid word count or tweet count from OpenAI');
-    }
+    console.log(`Thread generated: ${actualWordCount} words, ${actualTweetCount} tweets (${length})`);
 
     return {
-      thread: result.thread,
-      wordCount: wordCount,
-      tweetCount: tweetCount
+      thread: threadContent,
+      wordCount: actualWordCount,
+      tweetCount: actualTweetCount
     };
 
   } catch (error) {

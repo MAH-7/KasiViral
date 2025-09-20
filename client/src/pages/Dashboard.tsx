@@ -36,22 +36,25 @@ export default function Dashboard(): JSX.Element {
 
   const lengthOptions = {
     short: {
-      name: "Short",
-      description: "200-400 words",
+      name: "Quick Hit",
+      description: "150-300 words • 3-5 tweets",
+      subtitle: "Perfect for tips & insights",
       icon: <Zap className="w-4 h-4" />,
       color: "bg-green-50 border-green-200 text-green-700",
       activeColor: "border-green-500 bg-green-50"
     },
     medium: {
-      name: "Medium", 
-      description: "500-800 words",
+      name: "Deep Dive", 
+      description: "350-500 words • 6-8 tweets",
+      subtitle: "Ideal for how-tos & stories",
       icon: <Clock className="w-4 h-4" />,
       color: "bg-blue-50 border-blue-200 text-blue-700",
       activeColor: "border-blue-500 bg-blue-50"
     },
     long: {
-      name: "Long",
-      description: "900-1500 words", 
+      name: "Masterclass",
+      description: "550-750 words • 9-12 tweets", 
+      subtitle: "Comprehensive guides & analysis",
       icon: <AlignLeft className="w-4 h-4" />,
       color: "bg-purple-50 border-purple-200 text-purple-700",
       activeColor: "border-purple-500 bg-purple-50"
@@ -410,7 +413,8 @@ export default function Dashboard(): JSX.Element {
                           {option.icon}
                           <span className="font-semibold">{option.name}</span>
                         </div>
-                        <p className="text-sm">{option.description}</p>
+                        <p className="text-sm font-medium">{option.description}</p>
+                        <p className="text-xs text-gray-600 mt-1">{option.subtitle}</p>
                       </button>
                     ))}
                   </div>
@@ -546,7 +550,7 @@ export default function Dashboard(): JSX.Element {
                           </div>
                           <div className="flex items-center gap-3 mb-2">
                             <Badge className={`text-xs ${getLengthBadgeColor(thread.length)}`}>
-                              {thread.length.charAt(0).toUpperCase() + thread.length.slice(1)}
+                              {lengthOptions[thread.length].name}
                             </Badge>
                             <span className="text-sm text-muted-foreground">
                               {thread.wordCount} words
@@ -618,20 +622,12 @@ export default function Dashboard(): JSX.Element {
         <Dialog open={!!viewingThread} onOpenChange={() => setViewingThread(null)}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <span>{viewingThread.topic}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewingThread(null)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <DialogTitle>
+                {viewingThread.topic}
               </DialogTitle>
               <DialogDescription className="flex items-center gap-4 text-sm">
                 <Badge className={`${getLengthBadgeColor(viewingThread.length)}`}>
-                  {viewingThread.length.charAt(0).toUpperCase() + viewingThread.length.slice(1)}
+                  {lengthOptions[viewingThread.length].name}
                 </Badge>
                 <span>{viewingThread.wordCount} words</span>
                 <span>{viewingThread.tweetCount} tweets</span>

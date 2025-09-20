@@ -4,4 +4,5 @@
 [x] 4. Implement complete recent threads functionality with database storage
 [x] 5. Fix critical bug in storage WHERE clauses using proper Drizzle and() operator  
 [x] 6. Verify the project is working using the feedback tool
-[x] 7. Inform user the import is completed and they can start building, mark the import as completed using the complete_project_import tool
+[x] 7. Fix word and character counting accuracy - replaced OpenAI's inaccurate counts with proper server-side counting functions
+[x] 8. Inform user the import is completed and they can start building, mark the import as completed using the complete_project_import tool
