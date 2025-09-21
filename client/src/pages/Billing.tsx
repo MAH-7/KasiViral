@@ -83,7 +83,7 @@ export default function Billing(): JSX.Element {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await getSupabaseClient().auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${(await (await getSupabaseClient()).auth.getSession()).data.session?.access_token}`,
         },
         body: JSON.stringify({
           priceId,

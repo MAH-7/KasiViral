@@ -122,8 +122,8 @@ export class DrizzleStorage implements IStorage {
         set: {
           plan: subscription.plan,
           status: subscription.status || "inactive", 
-          paymentCustomerId: subscription.paymentCustomerId,
-          paymentSubscriptionId: subscription.paymentSubscriptionId,
+          stripeCustomerId: subscription.stripeCustomerId,
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
           priceId: subscription.priceId,
           expiresAt: subscription.expiresAt,
         },
@@ -236,6 +236,7 @@ export class DrizzleStorage implements IStorage {
   async createUsageEvent(usageEvent: InsertOpenaiUsageEvent): Promise<OpenaiUsageEvent> {
     const result = await db.insert(openaiUsageEvents).values({
       userId: usageEvent.userId,
+      eventType: usageEvent.eventType,
       model: usageEvent.model,
       promptTokens: usageEvent.promptTokens,
       completionTokens: usageEvent.completionTokens,

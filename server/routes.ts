@@ -306,17 +306,27 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
+      console.log(`Processing webhook event: ${event.type}`);
+      
       switch (event.type) {
         case 'customer.subscription.created':
         case 'customer.subscription.updated': {
           const subscription = event.data.object as Stripe.Subscription;
           const userId = subscription.metadata.userId;
           
+          console.log(`Subscription ${event.type} for user: ${userId}`);
+          
           if (userId) {
             const plan = subscription.items.data[0]?.price.recurring?.interval === 'year' ? 'annual' : 'monthly';
             const status = subscription.status === 'active' ? 'active' : 'inactive';
             
-            const expiresAt = new Date(subscription.current_period_end * 1000);
+            // Safely handle the current_period_end timestamp
+            const periodEnd = (subscription as any).current_period_end;
+            const expiresAt = periodEnd && typeof periodEnd === 'number' 
+              ? new Date(periodEnd * 1000) 
+              : new Date(Date.now() + (plan === 'annual' ? 365 : 30) * 24 * 60 * 60 * 1000);
+            
+            console.log(`Creating subscription: plan=${plan}, status=${status}, expires=${expiresAt.toISOString()}`);
             
             await storage.upsertSubscription({
               userId,
@@ -327,6 +337,8 @@ export function registerRoutes(app: Express): Server {
               priceId: subscription.items.data[0]?.price.id,
               expiresAt,
             });
+            
+            console.log(`Subscription updated successfully for user ${userId}`);
           }
           break;
         }
@@ -351,16 +363,16 @@ export function registerRoutes(app: Express): Server {
         
         case 'invoice.payment_succeeded': {
           const invoice = event.data.object as Stripe.Invoice;
-          if (invoice.subscription && invoice.customer_email) {
-            console.log('Payment succeeded for subscription:', invoice.subscription);
+          if ((invoice as any).subscription && invoice.customer_email) {
+            console.log('Payment succeeded for subscription:', (invoice as any).subscription);
           }
           break;
         }
         
         case 'invoice.payment_failed': {
           const invoice = event.data.object as Stripe.Invoice;
-          if (invoice.subscription) {
-            console.log('Payment failed for subscription:', invoice.subscription);
+          if ((invoice as any).subscription) {
+            console.log('Payment failed for subscription:', (invoice as any).subscription);
           }
           break;
         }
@@ -369,21 +381,31 @@ export function registerRoutes(app: Express): Server {
           const session = event.data.object as Stripe.Checkout.Session;
           const userId = session.metadata?.userId;
           
-          if (userId && session.mode === 'payment') {
-            // For one-time payments (FPX), create a temporary active subscription
-            const plan = session.amount_total === 20000 ? 'monthly' : 'annual'; // 200 MYR = 20000 cents
-            const expiresAt = new Date();
-            expiresAt.setMonth(expiresAt.getMonth() + (plan === 'annual' ? 12 : 1));
-            
-            await storage.upsertSubscription({
-              userId,
-              plan,
-              status: 'active',
-              stripeCustomerId: session.customer as string,
-              stripeSubscriptionId: undefined, // No subscription for one-time payments
-              priceId: undefined,
-              expiresAt,
-            });
+          console.log(`Checkout completed for user: ${userId}, mode: ${session.mode}, amount: ${session.amount_total}`);
+          
+          if (userId) {
+            if (session.mode === 'payment') {
+              // For one-time payments (FPX), create a temporary active subscription
+              const plan = session.amount_total === 20000 ? 'monthly' : 'annual'; // 200 MYR = 20000 cents
+              const expiresAt = new Date();
+              expiresAt.setMonth(expiresAt.getMonth() + (plan === 'annual' ? 12 : 1));
+              
+              console.log(`Creating one-time payment subscription: plan=${plan}, expires=${expiresAt.toISOString()}`);
+              
+              await storage.upsertSubscription({
+                userId,
+                plan,
+                status: 'active',
+                stripeCustomerId: session.customer as string,
+                stripeSubscriptionId: undefined, // No subscription for one-time payments
+                priceId: undefined,
+                expiresAt,
+              });
+              
+              console.log(`One-time payment subscription created for user ${userId}`);
+            } else if (session.mode === 'subscription') {
+              console.log(`Subscription checkout completed - waiting for subscription.created webhook`);
+            }
           }
           break;
         }
@@ -406,6 +428,7 @@ export function registerRoutes(app: Express): Server {
           currency: 'myr',
           displayAmount: 'RM20',
           interval: 'month',
+          priceId: 'price_1S9u3U1oqMxvtQmcBZiPWhdo', // RM20 monthly price ID
         },
         annual: {
           amount: 200,
@@ -413,6 +436,7 @@ export function registerRoutes(app: Express): Server {
           displayAmount: 'RM200',
           interval: 'year',
           savings: 'RM40',
+          priceId: 'price_1S9u431oqMxvtQmcvbMHD1ay', // RM200 annual price ID
         },
       },
     });
@@ -534,10 +558,11 @@ export function registerRoutes(app: Express): Server {
           await storage.createUsageEvent({
             userId,
             eventType: 'thread_generation',
-            promptTokens: result.usage.prompt_tokens,
-            completionTokens: result.usage.completion_tokens,
-            totalTokens: result.usage.total_tokens,
-            costUsd: result.cost,
+            model: result.usage.model,
+            promptTokens: result.usage.promptTokens,
+            completionTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+            totalCostUsd: result.usage.totalCostUsd,
           });
         } catch (usageError) {
           console.error('Failed to log usage event:', usageError);
@@ -551,10 +576,9 @@ export function registerRoutes(app: Express): Server {
         topic: topic.trim(),
         language,
         length,
-        content: result.content,
-        promptTokens: result.usage?.prompt_tokens || 0,
-        completionTokens: result.usage?.completion_tokens || 0,
-        costUsd: result.cost || 0,
+        content: result.thread,
+        wordCount: result.wordCount,
+        tweetCount: result.tweetCount,
       });
       
       res.json({
@@ -569,10 +593,10 @@ export function registerRoutes(app: Express): Server {
           copyCount: thread.copyCount,
         },
         usage: {
-          promptTokens: result.usage?.prompt_tokens || 0,
-          completionTokens: result.usage?.completion_tokens || 0,
-          totalTokens: result.usage?.total_tokens || 0,
-          costUsd: result.cost || 0,
+          promptTokens: result.usage?.promptTokens || 0,
+          completionTokens: result.usage?.completionTokens || 0,
+          totalTokens: result.usage?.totalTokens || 0,
+          costUsd: result.usage?.totalCostUsd || 0,
         },
       });
     } catch (error: any) {

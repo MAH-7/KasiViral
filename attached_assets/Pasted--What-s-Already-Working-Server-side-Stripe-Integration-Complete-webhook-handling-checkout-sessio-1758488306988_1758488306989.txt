@@ -1,0 +1,54 @@
+✅ What's Already Working:
+Server-side Stripe Integration: Complete webhook handling, checkout sessions, customer portal
+Frontend Components: Updated billing and subscribe pages with real Stripe integration
+Database Schema: Ready for Stripe customer and subscription data
+Security: Proper secret management through Replit's secure environment
+🔧 What You Need to Configure in Stripe Dashboard:
+1. Create Products & Pricing Plans:
+
+Go to https://dashboard.stripe.com/products
+Create a new product: "Kasiviral Plan"
+Add these two prices:
+Monthly: RM20.00 (recurring monthly)
+Yearly: RM200.00 (recurring yearly)
+Copy the price IDs (they start with price_) - you'll need these
+2. Enable Payment Methods:
+
+Go to Settings → Payment methods
+Enable "Cards" (for subscriptions)
+Enable "FPX" (for Malaysian one-time payments)
+3. Set up Customer Portal:
+
+Go to Settings → Customer portal
+Click "Activate" to enable self-service subscription management
+Configure allowed actions: cancel subscriptions, update payment methods
+4. Configure Webhooks:
+
+Go to Developers → Webhooks
+Add endpoint: https://your-replit-url.replit.app/api/webhook
+Select these events:
+customer.subscription.created
+customer.subscription.updated
+customer.subscription.deleted
+invoice.payment_succeeded
+invoice.payment_failed
+checkout.session.completed
+💡 How the Payment Flow Works:
+For Malaysian Customers:
+
+Credit/Debit Cards → Creates recurring subscriptions (RM20/month or RM200/year)
+FPX Bank Transfer → One-time payments for same durations (no recurring billing)
+User Experience:
+
+User selects plan and payment method on billing page
+Redirected to secure Stripe Checkout
+After payment, automatically redirected back with subscription activated
+Users can manage subscriptions via Stripe Customer Portal
+🔄 Next Steps:
+Get your price IDs from Stripe Dashboard and add them to the pricing configuration
+Test in Stripe Test Mode first (use test cards like 4242424242424242)
+Enable live mode when ready for real payments
+The integration follows Stripe's best practices for security and is fully compliant with Malaysian payment regulations. FPX payments support all major Malaysian banks including Maybank, CIMB, Public Bank, and others.
+
+Would you like me to help you with any specific part of the Stripe Dashboard configuration, or shall we test the payment flow?
+
