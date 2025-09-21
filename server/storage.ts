@@ -122,8 +122,8 @@ export class DrizzleStorage implements IStorage {
         set: {
           plan: subscription.plan,
           status: subscription.status || "inactive", 
-          stripeCustomerId: subscription.stripeCustomerId,
-          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          paymentCustomerId: subscription.paymentCustomerId,
+          paymentSubscriptionId: subscription.paymentSubscriptionId,
           priceId: subscription.priceId,
           expiresAt: subscription.expiresAt,
         },

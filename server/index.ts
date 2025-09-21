@@ -21,8 +21,7 @@ app.use((req, res, next) => {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       
       // Skip logging response bodies for sensitive endpoints
-      const skipResponseLogging = path.startsWith('/api/stripe/') || 
-                                  path.includes('webhook') || 
+      const skipResponseLogging = path.includes('webhook') || 
                                   path.includes('secret');
       
       if (capturedJsonResponse && !skipResponseLogging) {

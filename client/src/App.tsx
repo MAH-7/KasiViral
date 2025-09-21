@@ -35,7 +35,7 @@ function Router() {
         </BillingRoute>
       </Route>
       
-      {/* Stripe subscription checkout */}
+      {/* Subscription checkout */}
       <Route path="/subscribe">
         <AuthenticatedRoute>
           <Subscribe />

@@ -61,7 +61,7 @@ export default function Billing(): JSX.Element {
 
   const currentPlan = plans[selectedPlan];
 
-  // Handle secure Stripe checkout
+  // Handle secure checkout
   const handleCheckout = async (plan: 'monthly' | 'annual') => {
     setIsProcessing(true);
     navigate(`/subscribe?plan=${plan}`);
@@ -244,7 +244,7 @@ export default function Billing(): JSX.Element {
                     </div>
                     <div>
                       <h3 className="text-lg font-medium text-foreground">Credit & Debit Cards</h3>
-                      <p className="text-sm text-muted-foreground">Secure payment powered by Stripe</p>
+                      <p className="text-sm text-muted-foreground">Secure payment processing coming soon</p>
                     </div>
                   </div>
                   
