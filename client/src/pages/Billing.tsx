@@ -62,14 +62,60 @@ export default function Billing(): JSX.Element {
   const currentPlan = plans[selectedPlan];
 
   // Handle secure checkout
-  const handleCheckout = async (plan: 'monthly' | 'annual') => {
+  const handleCheckout = async (plan: 'monthly' | 'annual', mode: 'subscription' | 'payment' = 'subscription') => {
     setIsProcessing(true);
-    navigate(`/subscribe?plan=${plan}`);
-    setIsProcessing(false);
+    try {
+      // Get Stripe configuration and create checkout session
+      const configResponse = await fetch('/api/stripe/config');
+      const config = await configResponse.json();
+      
+      const priceId = plan === 'monthly' 
+        ? config.pricing.monthly.priceId 
+        : config.pricing.annual.priceId;
+
+      if (!priceId) {
+        // Fallback to subscribe page for manual setup
+        navigate(`/subscribe?plan=${plan}&mode=${mode}`);
+        return;
+      }
+
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await getSupabaseClient().auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          priceId,
+          mode
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        // Fallback to subscribe page
+        navigate(`/subscribe?plan=${plan}&mode=${mode}`);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      // Fallback to subscribe page
+      navigate(`/subscribe?plan=${plan}&mode=${mode}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handlePlanSelect = (plan: 'monthly' | 'annual') => {
-    handleCheckout(plan);
+    const mode = activeTab === 'fpx' ? 'payment' : 'subscription';
+    handleCheckout(plan, mode);
   };
 
   return (

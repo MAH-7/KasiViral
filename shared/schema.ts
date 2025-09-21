@@ -15,9 +15,9 @@ export const subscriptions = pgTable("subscriptions", {
   userId: text("user_id").notNull().unique(), // Supabase user ID
   plan: text("plan", { enum: ["monthly", "annual"] }).notNull(),
   status: text("status", { enum: ["active", "inactive", "canceled"] }).notNull().default("inactive"),
-  paymentCustomerId: text("payment_customer_id"), // Payment provider customer ID
-  paymentSubscriptionId: text("payment_subscription_id"), // Payment provider subscription ID
-  priceId: text("price_id"), // Payment provider price/plan ID for the subscription
+  stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID
+  stripeSubscriptionId: text("stripe_subscription_id"), // Stripe subscription ID
+  priceId: text("price_id"), // Stripe price/plan ID for the subscription
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -27,6 +27,7 @@ export const threads = pgTable("threads", {
   userId: text("user_id").notNull(), // Supabase user ID
   topic: text("topic").notNull(),
   content: text("content").notNull(),
+  language: text("language", { enum: ["english", "malay"] }).notNull(),
   length: text("length", { enum: ["short", "medium", "long"] }).notNull(),
   wordCount: integer("word_count").notNull(),
   tweetCount: integer("tweet_count").notNull(),
@@ -38,6 +39,7 @@ export const threads = pgTable("threads", {
 export const openaiUsageEvents = pgTable("openai_usage_events", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(), // Supabase user ID
+  eventType: text("event_type").notNull(), // Type of event
   model: text("model").notNull(), // OpenAI model used (e.g., gpt-4o-mini)
   promptTokens: integer("prompt_tokens").notNull(),
   completionTokens: integer("completion_tokens").notNull(),
@@ -60,16 +62,16 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).pick({
   userId: true,
   plan: true,
   status: true,
-  paymentCustomerId: true,
-  paymentSubscriptionId: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
   priceId: true,
   expiresAt: true,
 }).extend({
   userId: z.string().min(1, "User ID is required"),
   plan: z.enum(["monthly", "annual"]),
   status: z.enum(["active", "inactive", "canceled"]).optional(),
-  paymentCustomerId: z.string().optional(),
-  paymentSubscriptionId: z.string().optional(),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
   priceId: z.string().optional(),
   expiresAt: z.coerce.date(),
 });
@@ -78,6 +80,7 @@ export const insertThreadSchema = createInsertSchema(threads).pick({
   userId: true,
   topic: true,
   content: true,
+  language: true,
   length: true,
   wordCount: true,
   tweetCount: true,
@@ -85,6 +88,7 @@ export const insertThreadSchema = createInsertSchema(threads).pick({
   userId: z.string().min(1, "User ID is required"),
   topic: z.string().min(1, "Topic is required"),
   content: z.string().min(1, "Content is required"),
+  language: z.enum(["english", "malay"]),
   length: z.enum(["short", "medium", "long"]),
   wordCount: z.number().min(1),
   tweetCount: z.number().min(1),
@@ -92,6 +96,7 @@ export const insertThreadSchema = createInsertSchema(threads).pick({
 
 export const insertOpenaiUsageEventSchema = createInsertSchema(openaiUsageEvents).pick({
   userId: true,
+  eventType: true,
   model: true,
   promptTokens: true,
   completionTokens: true,
@@ -99,6 +104,7 @@ export const insertOpenaiUsageEventSchema = createInsertSchema(openaiUsageEvents
   totalCostUsd: true,
 }).extend({
   userId: z.string().min(1, "User ID is required"),
+  eventType: z.string().min(1, "Event type is required"),
   model: z.string().min(1, "Model is required"),
   promptTokens: z.number().min(0),
   completionTokens: z.number().min(0),

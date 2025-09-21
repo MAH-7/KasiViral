@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 import { storage } from "./storage";
 import { insertSubscriptionSchema } from "@shared/schema";
 
@@ -10,6 +11,14 @@ const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_ANON_KEY!
 );
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2025-08-27.basil",
+});
 
 // KasiViralPro pricing - Generic pricing configuration
 const PRICING = {
@@ -188,8 +197,226 @@ export function registerRoutes(app: Express): Server {
     });
   }
 
-  // TODO: Replace with webhook handlers for payment processing
-  // that verify signed payment events and activate subscriptions securely
+  // Stripe Checkout Session Creation
+  app.post("/api/create-checkout-session", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { priceId, mode = 'subscription' } = req.body;
+      const userId = req.user!.id;
+      const userEmail = req.user!.email;
+      
+      if (!priceId) {
+        return res.status(400).json({ error: 'Price ID is required' });
+      }
+      
+      // Check if user already has a Stripe customer
+      let customer;
+      const existingSubscription = await storage.getSubscriptionByUserId(userId);
+      
+      if (existingSubscription?.stripeCustomerId) {
+        customer = await stripe.customers.retrieve(existingSubscription.stripeCustomerId);
+      } else {
+        // Create new customer
+        customer = await stripe.customers.create({
+          email: userEmail,
+          metadata: {
+            userId: userId,
+          },
+        });
+      }
+      
+      const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+        customer: customer.id,
+        mode: mode,
+        success_url: `${req.headers.origin}/billing?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}/billing`,
+        metadata: {
+          userId: userId,
+        },
+      };
+      
+      if (mode === 'subscription') {
+        sessionConfig.line_items = [{
+          price: priceId,
+          quantity: 1,
+        }];
+        sessionConfig.subscription_data = {
+          metadata: {
+            userId: userId,
+          },
+        };
+      } else {
+        // For one-time payments (FPX)
+        sessionConfig.line_items = [{
+          price: priceId,
+          quantity: 1,
+        }];
+        sessionConfig.payment_method_types = ['card', 'fpx'];
+      }
+      
+      const session = await stripe.checkout.sessions.create(sessionConfig);
+      
+      res.json({ 
+        url: session.url,
+        sessionId: session.id 
+      });
+    } catch (error: any) {
+      console.error('Error creating checkout session:', error);
+      res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+  });
+  
+  // Customer Portal Session Creation
+  app.post("/api/create-portal-session", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const subscription = await storage.getSubscriptionByUserId(userId);
+      
+      if (!subscription?.stripeCustomerId) {
+        return res.status(400).json({ error: 'No customer found' });
+      }
+      
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripeCustomerId,
+        return_url: `${req.headers.origin}/billing`,
+      });
+      
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('Error creating portal session:', error);
+      res.status(500).json({ error: 'Failed to create portal session' });
+    }
+  });
+  
+  // Stripe Webhook Handler
+  app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    let event: Stripe.Event;
+    
+    try {
+      if (endpointSecret) {
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      } else {
+        event = req.body;
+      }
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    
+    try {
+      switch (event.type) {
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription;
+          const userId = subscription.metadata.userId;
+          
+          if (userId) {
+            const plan = subscription.items.data[0]?.price.recurring?.interval === 'year' ? 'annual' : 'monthly';
+            const status = subscription.status === 'active' ? 'active' : 'inactive';
+            
+            const expiresAt = new Date(subscription.current_period_end * 1000);
+            
+            await storage.upsertSubscription({
+              userId,
+              plan,
+              status,
+              stripeCustomerId: subscription.customer as string,
+              stripeSubscriptionId: subscription.id,
+              priceId: subscription.items.data[0]?.price.id,
+              expiresAt,
+            });
+          }
+          break;
+        }
+        
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription;
+          const userId = subscription.metadata.userId;
+          
+          if (userId) {
+            await storage.upsertSubscription({
+              userId,
+              plan: 'monthly',
+              status: 'canceled',
+              stripeCustomerId: subscription.customer as string,
+              stripeSubscriptionId: subscription.id,
+              priceId: subscription.items.data[0]?.price.id,
+              expiresAt: new Date(),
+            });
+          }
+          break;
+        }
+        
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice;
+          if (invoice.subscription && invoice.customer_email) {
+            console.log('Payment succeeded for subscription:', invoice.subscription);
+          }
+          break;
+        }
+        
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice;
+          if (invoice.subscription) {
+            console.log('Payment failed for subscription:', invoice.subscription);
+          }
+          break;
+        }
+        
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session;
+          const userId = session.metadata?.userId;
+          
+          if (userId && session.mode === 'payment') {
+            // For one-time payments (FPX), create a temporary active subscription
+            const plan = session.amount_total === 20000 ? 'monthly' : 'annual'; // 200 MYR = 20000 cents
+            const expiresAt = new Date();
+            expiresAt.setMonth(expiresAt.getMonth() + (plan === 'annual' ? 12 : 1));
+            
+            await storage.upsertSubscription({
+              userId,
+              plan,
+              status: 'active',
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: undefined, // No subscription for one-time payments
+              priceId: undefined,
+              expiresAt,
+            });
+          }
+          break;
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
+  
+  // Get Stripe pricing configuration
+  app.get("/api/stripe/config", (req: Request, res: Response) => {
+    res.json({
+      publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY,
+      pricing: {
+        monthly: {
+          amount: 20,
+          currency: 'myr',
+          displayAmount: 'RM20',
+          interval: 'month',
+        },
+        annual: {
+          amount: 200,
+          currency: 'myr', 
+          displayAmount: 'RM200',
+          interval: 'year',
+          savings: 'RM40',
+        },
+      },
+    });
+  });
 
   // Authenticated registration endpoint to create user and default subscription for new users
   app.post("/api/auth/register", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
