@@ -276,6 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create subscription in Stripe using pre-created price IDs
       const pricing = PRICING[plan as 'monthly' | 'annual'];
 
+      console.log('Creating subscription with pricing:', pricing);
+      
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
         items: [{ price: pricing.priceId }],
@@ -286,6 +288,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         expand: ['latest_invoice.payment_intent'],
       });
+
+      console.log('Subscription created:', {
+        id: subscription.id,
+        status: subscription.status,
+        latest_invoice_type: typeof subscription.latest_invoice,
+        pending_setup_intent_type: typeof subscription.pending_setup_intent,
+        has_latest_invoice: !!subscription.latest_invoice,
+        has_pending_setup_intent: !!subscription.pending_setup_intent
+      });
+      
+      // Additional debug logging
+      if (subscription.latest_invoice && typeof subscription.latest_invoice === 'object') {
+        const invoice = subscription.latest_invoice as any;
+        console.log('Latest invoice details:', {
+          id: invoice.id,
+          amount_due: invoice.amount_due,
+          payment_intent_type: typeof invoice.payment_intent,
+          payment_intent_id: invoice.payment_intent ? 
+            (typeof invoice.payment_intent === 'string' ? 
+              invoice.payment_intent : 
+              invoice.payment_intent.id) : null
+        });
+      }
 
       // Create INACTIVE subscription in database - will be activated via webhook
       // Set a temporary expiresAt that will be updated when payment succeeds
@@ -302,13 +327,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt: tempExpiresAt,
       });
 
-      const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = (latestInvoice as any).payment_intent as Stripe.PaymentIntent;
+      // Handle both string ID and expanded invoice object cases  
+      let invoice: Stripe.Invoice;
+      if (typeof subscription.latest_invoice === 'string') {
+        // Retrieve invoice with payment_intent expansion
+        invoice = await stripe.invoices.retrieve(subscription.latest_invoice, {
+          expand: ['payment_intent']
+        });
+      } else if (subscription.latest_invoice) {
+        invoice = subscription.latest_invoice;
+        // If the invoice exists but payment_intent isn't expanded, expand it
+        if ((invoice as any).payment_intent && typeof (invoice as any).payment_intent === 'string' && invoice.id) {
+          invoice = await stripe.invoices.retrieve(invoice.id, {
+            expand: ['payment_intent']
+          });
+        }
+      } else {
+        throw new Error('No invoice found for subscription');
+      }
 
-      res.json({
-        subscriptionId: subscription.id,
-        clientSecret: paymentIntent.client_secret,
-        status: subscription.status,
+      // If no payment intent exists but payment is required, use invoice.pay to create proper PaymentIntent
+      if (invoice.amount_due > 0 && !(invoice as any).payment_intent && invoice.id) {
+        console.log('No payment intent found for invoice with amount due. Using invoice.pay to create proper PaymentIntent...');
+        
+        try {
+          // Use invoice.pay to create a properly linked PaymentIntent
+          const paidInvoice = await stripe.invoices.pay(invoice.id, {
+            payment_method: undefined, // Let user provide payment method
+            expand: ['payment_intent']
+          });
+          
+          console.log('Created PaymentIntent via invoice.pay:', {
+            invoice_id: paidInvoice.id,
+            payment_intent_id: (paidInvoice as any).payment_intent?.id,
+            status: (paidInvoice as any).payment_intent?.status,
+            has_client_secret: !!((paidInvoice as any).payment_intent?.client_secret)
+          });
+          
+          // Update the invoice reference with the paid invoice that has the payment intent
+          invoice = paidInvoice;
+          
+        } catch (error) {
+          console.error('Failed to pay invoice (expected for incomplete payment):', error);
+          
+          // If invoice.pay fails (expected when no payment method), fall back to manual PaymentIntent
+          // but ensure we link it properly to the invoice
+          try {
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount: invoice.amount_due,
+              currency: invoice.currency || 'myr',
+              customer: stripeCustomerId,
+              metadata: {
+                invoice_id: invoice.id,
+                subscription_id: subscription.id,
+              },
+              setup_future_usage: 'off_session',
+            });
+            
+            console.log('Created fallback PaymentIntent manually:', {
+              id: paymentIntent.id,
+              amount: paymentIntent.amount,
+              status: paymentIntent.status,
+              has_client_secret: !!paymentIntent.client_secret
+            });
+            
+            // Store the manually created payment intent
+            (invoice as any).payment_intent = paymentIntent;
+            
+          } catch (fallbackError) {
+            console.error('Failed to create fallback PaymentIntent:', fallbackError);
+          }
+        }
+      }
+
+      // Extract payment intent with improved logic
+      let paymentIntent: Stripe.PaymentIntent | null = null;
+      let setupIntent: Stripe.SetupIntent | null = null;
+
+      // Try to get payment intent from invoice
+      if (invoice && (invoice as any).payment_intent) {
+        const pi = (invoice as any).payment_intent;
+        if (typeof pi === 'string') {
+          // If it's just an ID, retrieve the full PaymentIntent
+          try {
+            paymentIntent = await stripe.paymentIntents.retrieve(pi);
+          } catch (error) {
+            console.error('Failed to retrieve payment intent:', error);
+          }
+        } else if (pi && typeof pi === 'object') {
+          // If it's already expanded, use it directly
+          paymentIntent = pi;
+        }
+      }
+
+      // Get setup intent from subscription
+      if (subscription && (subscription as any).pending_setup_intent) {
+        const si = (subscription as any).pending_setup_intent;
+        if (typeof si === 'string') {
+          try {
+            setupIntent = await stripe.setupIntents.retrieve(si);
+          } catch (error) {
+            console.error('Failed to retrieve setup intent:', error);
+          }
+        } else if (si && typeof si === 'object') {
+          setupIntent = si;
+        }
+      }
+
+      console.log('Intent extraction results:', {
+        paymentIntent: paymentIntent ? { id: paymentIntent.id, status: paymentIntent.status, has_client_secret: !!paymentIntent.client_secret } : null,
+        setupIntent: setupIntent ? { id: setupIntent.id, status: setupIntent.status, has_client_secret: !!setupIntent.client_secret } : null,
+        invoice_amount_due: invoice?.amount_due
+      });
+      
+      // Handle different payment scenarios
+      if (invoice.amount_due === 0) {
+        // No payment required (e.g., trial, free tier)
+        return res.json({
+          subscriptionId: subscription.id,
+          requiresPayment: false,
+          status: subscription.status,
+        });
+      }
+      
+      // Check for PaymentIntent client_secret (paid subscriptions)
+      if (paymentIntent?.client_secret) {
+        return res.json({
+          subscriptionId: subscription.id,
+          clientSecret: paymentIntent.client_secret,
+          requiresPayment: true,
+          intentType: 'payment',
+          status: subscription.status,
+        });
+      }
+      
+      // Check for SetupIntent client_secret (trials or specific configurations)
+      if (setupIntent?.client_secret) {
+        return res.json({
+          subscriptionId: subscription.id,
+          clientSecret: setupIntent.client_secret,
+          requiresPayment: true,
+          intentType: 'setup',
+          status: subscription.status,
+        });
+      }
+      
+      // Neither client_secret available - this is a retriable error
+      console.error('Payment required but no client_secret found. PI:', !!paymentIntent, 'SI:', !!setupIntent, 'Sub:', subscription.id);
+      return res.status(502).json({ 
+        error: 'Payment processing temporarily unavailable. Please try again.',
+        retryable: true 
       });
 
     } catch (error) {
@@ -393,6 +561,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (customer.metadata?.supabaseUserId) {
             await storage.updateSubscriptionStatus(customer.metadata.supabaseUserId, 'canceled');
             console.log(`Canceled subscription for user: ${customer.metadata.supabaseUserId}`);
+          }
+          break;
+        }
+
+        case 'payment_intent.succeeded': {
+          // Handle manually created PaymentIntents that are linked to subscriptions
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          const { invoice_id, subscription_id } = paymentIntent.metadata || {};
+          
+          if (subscription_id && invoice_id) {
+            console.log(`Payment intent succeeded for subscription: ${subscription_id}, invoice: ${invoice_id}`);
+            
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscription_id);
+              const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+              const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+              
+              if (customer.metadata?.supabaseUserId) {
+                // Activate subscription and set proper expiry from Stripe
+                const expiresAt = new Date((subscription as any).current_period_end * 1000);
+                
+                await storage.upsertSubscription({
+                  userId: customer.metadata.supabaseUserId,
+                  plan: subscription.items.data[0].price.recurring?.interval === 'month' ? 'monthly' : 'annual',
+                  status: 'active',
+                  stripeCustomerId: customerId,
+                  stripeSubscriptionId: subscription.id,
+                  priceId: subscription.items.data[0].price.id,
+                  expiresAt,
+                });
+                
+                console.log(`Activated subscription via PaymentIntent for user: ${customer.metadata.supabaseUserId}, expires: ${expiresAt}`);
+              }
+            } catch (error) {
+              console.error('Error processing PaymentIntent success for subscription:', error);
+            }
+          }
+          break;
+        }
+
+        case 'payment_intent.payment_failed': {
+          // Handle payment failures for manually created PaymentIntents
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          const { subscription_id } = paymentIntent.metadata || {};
+          
+          if (subscription_id) {
+            console.log(`Payment intent failed for subscription: ${subscription_id}`);
+            
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscription_id);
+              const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+              const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+              
+              if (customer.metadata?.supabaseUserId) {
+                await storage.updateSubscriptionStatus(customer.metadata.supabaseUserId, 'inactive');
+                console.log(`Deactivated subscription via PaymentIntent failure for user: ${customer.metadata.supabaseUserId}`);
+              }
+            } catch (error) {
+              console.error('Error processing PaymentIntent failure for subscription:', error);
+            }
           }
           break;
         }
