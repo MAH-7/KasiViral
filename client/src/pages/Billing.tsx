@@ -82,9 +82,9 @@ export default function Billing(): JSX.Element {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
         </div>
 
-        <div className="w-full max-w-2xl mx-auto p-6">
+        <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           {/* Back Navigation */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <Button variant="ghost" size="sm" asChild data-testid="button-back">
               <Link href="/settings">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -96,7 +96,7 @@ export default function Billing(): JSX.Element {
           {/* Plan Selection Card */}
           <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl mb-6 animate-fade-up">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold">
+              <CardTitle className="text-xl sm:text-2xl font-bold">
                 KasiViral <span className="text-gradient">PRO</span>
               </CardTitle>
               <CardDescription className="text-muted-foreground mb-4">
@@ -104,10 +104,10 @@ export default function Billing(): JSX.Element {
               </CardDescription>
               
               {/* Plan Toggle */}
-              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto mb-4 sm:mb-6">
                 <button
                   onClick={() => setSelectedPlan("monthly")}
-                  className={`p-4 border-2 rounded-lg transition-all duration-200 ${
+                  className={`p-3 sm:p-4 border-2 rounded-lg transition-all duration-200 ${
                     selectedPlan === "monthly"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
@@ -115,44 +115,44 @@ export default function Billing(): JSX.Element {
                   data-testid="plan-monthly"
                 >
                   <div className="text-center">
-                    <div className="text-lg font-bold">RM20</div>
-                    <div className="text-sm text-muted-foreground">per month</div>
+                    <div className="text-base sm:text-lg font-bold">RM20</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">per month</div>
                   </div>
                 </button>
                 <button
                   onClick={() => setSelectedPlan("annual")}
-                  className={`p-4 border-2 rounded-lg transition-all duration-200 relative ${
+                  className={`p-3 sm:p-4 border-2 rounded-lg transition-all duration-200 relative ${
                     selectedPlan === "annual"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
                   data-testid="plan-annual"
                 >
-                  <div className="absolute -top-2 -right-2">
-                    <Badge className="gradient-secondary text-white text-xs px-2 py-1">
+                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2">
+                    <Badge className="gradient-secondary text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
                       SAVE RM40
                     </Badge>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold">RM200</div>
-                    <div className="text-sm text-muted-foreground">per year</div>
+                    <div className="text-base sm:text-lg font-bold">RM200</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">per year</div>
                   </div>
                 </button>
               </div>
 
               {/* Selected Plan Display */}
-              <div className="flex items-baseline justify-center gap-1 my-4">
-                <span className="text-5xl font-bold text-foreground">{currentPlan.price}</span>
-                <span className="text-xl text-muted-foreground">/ {currentPlan.period}</span>
+              <div className="flex items-baseline justify-center gap-1 my-3 sm:my-4">
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">{currentPlan.price}</span>
+                <span className="text-lg sm:text-xl text-muted-foreground">/ {currentPlan.period}</span>
               </div>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-sm sm:text-base text-muted-foreground">
                 {currentPlan.description} • Cancel anytime
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 mb-6">
+              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6">
                 {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-3 text-sm">
+                  <li key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                     <CheckIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
                     <span>{feature}</span>
                   </li>
@@ -164,41 +164,41 @@ export default function Billing(): JSX.Element {
           {/* Payment Methods Card */}
           <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl animate-fade-up" style={{ animationDelay: "0.1s" }}>
             <CardHeader className="text-center">
-              <CardTitle className="text-xl font-bold">Choose Payment Method</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-bold">Choose Payment Method</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
                 Select your preferred payment option for Malaysia
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="card" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4" data-testid="tab-card">
-                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                  <TabsTrigger value="card" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3" data-testid="tab-card">
+                    <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span className="text-xs sm:text-sm">Card</span>
                     <span className="hidden sm:inline">Payment</span>
                   </TabsTrigger>
-                  <TabsTrigger value="fpx" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4" data-testid="tab-fpx">
-                    <Building2 className="w-4 h-4 flex-shrink-0" />
+                  <TabsTrigger value="fpx" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3" data-testid="tab-fpx">
+                    <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span className="text-xs sm:text-sm">FPX</span>
                     <span className="hidden sm:inline">(Banks)</span>
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Card Payment Tab */}
-                <TabsContent value="card" className="space-y-6">
-                  <div className="text-center space-y-2 mb-6">
-                    <h3 className="font-semibold">Pay with Credit or Debit Card</h3>
-                    <p className="text-sm text-muted-foreground">Secure payment powered by Stripe</p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                <TabsContent value="card" className="space-y-4 sm:space-y-6">
+                  <div className="text-center space-y-2 mb-4 sm:mb-6">
+                    <h3 className="text-sm sm:text-base font-semibold">Pay with Credit or Debit Card</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Secure payment powered by Stripe</p>
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-blue-800 dark:text-blue-200">
                       💳 Secure card processing powered by Stripe
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <Button
                       onClick={() => handlePlanSelect(selectedPlan)}
                       disabled={isProcessing}
-                      className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-lg py-3"
+                      className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-sm sm:text-lg py-2.5 sm:py-3"
                       data-testid="button-pay-card"
                     >
                       {isProcessing ? (
@@ -214,29 +214,29 @@ export default function Billing(): JSX.Element {
                 </TabsContent>
 
                 {/* FPX Payment Tab */}
-                <TabsContent value="fpx" className="space-y-6">
-                  <div className="text-center space-y-2 mb-6">
-                    <h3 className="font-semibold">Pay with Malaysian Bank Account</h3>
-                    <p className="text-sm text-muted-foreground">FPX available after going live - currently sandbox mode</p>
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                <TabsContent value="fpx" className="space-y-4 sm:space-y-6">
+                  <div className="text-center space-y-2 mb-4 sm:mb-6">
+                    <h3 className="text-sm sm:text-base font-semibold">Pay with Malaysian Bank Account</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">FPX available after going live - currently sandbox mode</p>
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200">
                       🏦 FPX will be available when we move to live mode. For now, please use card payment.
                     </div>
                   </div>
 
-                  <div className="space-y-6 opacity-50">
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Malaysian Banks (Coming Soon)</Label>
-                      <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-4 sm:space-y-6 opacity-50">
+                    <div className="space-y-2 sm:space-y-3">
+                      <Label className="text-xs sm:text-sm font-medium">Malaysian Banks (Coming Soon)</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         {malaysianBanks.map((bank) => (
                           <div
                             key={bank.id}
-                            className={`p-4 border-2 rounded-lg flex items-center gap-3 text-left border-border ${bank.color} cursor-not-allowed`}
+                            className={`p-3 sm:p-4 border-2 rounded-lg flex items-center gap-2 sm:gap-3 text-left border-border ${bank.color} cursor-not-allowed`}
                             data-testid={`bank-${bank.id}`}
                           >
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white border">
-                              <span className="text-lg">{bank.logo}</span>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-white border">
+                              <span className="text-sm sm:text-lg">{bank.logo}</span>
                             </div>
-                            <span className="font-medium text-sm">{bank.name}</span>
+                            <span className="font-medium text-xs sm:text-sm">{bank.name}</span>
                           </div>
                         ))}
                       </div>
@@ -244,7 +244,7 @@ export default function Billing(): JSX.Element {
 
                     <Button
                       disabled
-                      className="w-full gradient-primary text-white opacity-50 cursor-not-allowed text-lg py-3"
+                      className="w-full gradient-primary text-white opacity-50 cursor-not-allowed text-sm sm:text-lg py-2.5 sm:py-3"
                       data-testid="button-pay-fpx"
                     >
                       FPX Coming Soon in Live Mode
@@ -254,9 +254,9 @@ export default function Billing(): JSX.Element {
               </Tabs>
 
               {/* Security Notice */}
-              <div className="flex items-center justify-center gap-2 mt-6 text-xs text-muted-foreground">
-                <Shield className="w-4 h-4" />
-                <span>🔒 Secure payment • 💸 30-day money-back guarantee • ❌ Cancel anytime</span>
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4 sm:mt-6 text-xs text-muted-foreground">
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-center">🔒 Secure payment • 💸 30-day money-back guarantee • ❌ Cancel anytime</span>
               </div>
             </CardContent>
           </Card>

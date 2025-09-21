@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DEVELOPMENT ONLY: Temporary endpoint for testing subscription activation
   // This should be removed in production and replaced with secure payment webhooks
   if (process.env.NODE_ENV === "development") {
-    app.post("/api/subscription/dev-activate", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    app.post("/api/subscription/dev-activate", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
       try {
         const userId = req.user!.id;
         
@@ -242,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.post("/api/stripe/create-subscription", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/stripe/create-subscription", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
       const userEmail = req.user!.email;
@@ -579,8 +579,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
               
               if (customer.metadata?.supabaseUserId) {
-                // Activate subscription and set proper expiry from Stripe
-                const expiresAt = new Date((subscription as any).current_period_end * 1000);
+                // Calculate subscription expiry date
+                let expiresAt: Date;
+                
+                if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+                  // Use Stripe's current_period_end if available
+                  expiresAt = new Date(subscription.current_period_end * 1000);
+                } else {
+                  // Fallback: calculate based on plan interval
+                  const interval = subscription.items.data[0].price.recurring?.interval;
+                  const now = new Date();
+                  expiresAt = new Date(now);
+                  
+                  if (interval === 'year') {
+                    expiresAt.setFullYear(now.getFullYear() + 1);
+                  } else {
+                    expiresAt.setMonth(now.getMonth() + 1);
+                  }
+                }
                 
                 await storage.upsertSubscription({
                   userId: customer.metadata.supabaseUserId,
@@ -637,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authenticated registration endpoint to create user and default subscription for new users
-  app.post("/api/auth/register", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/auth/register", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Use authenticated user's ID and metadata from token
       const userId = req.user!.id;
@@ -700,7 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile update endpoint
-  app.put("/api/auth/profile", verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
+  app.put("/api/auth/profile", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
       const { email, name } = req.body;
@@ -728,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Thread generation endpoint - requires active subscription
-  app.post("/api/generate-thread", verifyAuth, requireActiveSubscription, checkUsageLimits, async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/generate-thread", express.json(), verifyAuth, requireActiveSubscription, checkUsageLimits, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { topic, length, language } = req.body;
       const userId = req.user!.id;
@@ -850,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Thread action endpoints
-  app.put("/api/threads/:id/favorite", verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
+  app.put("/api/threads/:id/favorite", express.json(), verifyAuth, requireActiveSubscription, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const threadId = parseInt(req.params.id);
       const userId = req.user!.id;

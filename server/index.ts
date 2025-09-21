@@ -3,8 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -21,7 +19,13 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      
+      // Skip logging response bodies for sensitive endpoints
+      const skipResponseLogging = path.startsWith('/api/stripe/') || 
+                                  path.includes('webhook') || 
+                                  path.includes('secret');
+      
+      if (capturedJsonResponse && !skipResponseLogging) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
@@ -37,6 +41,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Skip body parsing middleware entirely - let routes handle their own parsing
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
