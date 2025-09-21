@@ -73,190 +73,263 @@ export default function Billing(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
+    <div className="min-h-screen flex flex-col bg-background">
       <HeaderSection />
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden py-8">
-        {/* Background Elements */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
-        </div>
-
-        <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      
+      <div className="flex-1 flex items-center justify-center py-6 px-4">
+        <div className="w-full max-w-3xl mx-auto space-y-6">
+          
           {/* Back Navigation */}
-          <div className="mb-4 sm:mb-6">
-            <Button variant="ghost" size="sm" asChild data-testid="button-back">
+          <div className="mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild 
+              className="hover:bg-muted rounded-lg" 
+              data-testid="button-back"
+            >
               <Link href="/settings">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Settings
+                <span className="text-sm">Back to Settings</span>
               </Link>
             </Button>
           </div>
 
-          {/* Plan Selection Card */}
-          <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl mb-6 animate-fade-up">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl sm:text-2xl font-bold">
-                KasiViral <span className="text-gradient">PRO</span>
-              </CardTitle>
-              <CardDescription className="text-muted-foreground mb-4">
-                Choose your billing cycle
-              </CardDescription>
-              
-              {/* Plan Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto mb-4 sm:mb-6">
-                <button
-                  onClick={() => setSelectedPlan("monthly")}
-                  className={`p-3 sm:p-4 border-2 rounded-lg transition-all duration-200 ${
-                    selectedPlan === "monthly"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  data-testid="plan-monthly"
-                >
-                  <div className="text-center">
-                    <div className="text-base sm:text-lg font-bold">RM20</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">per month</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setSelectedPlan("annual")}
-                  className={`p-3 sm:p-4 border-2 rounded-lg transition-all duration-200 relative ${
-                    selectedPlan === "annual"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  data-testid="plan-annual"
-                >
-                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2">
-                    <Badge className="gradient-secondary text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
-                      SAVE RM40
-                    </Badge>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-base sm:text-lg font-bold">RM200</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">per year</div>
-                  </div>
-                </button>
-              </div>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              KasiViral <span className="text-primary">PRO</span>
+            </h1>
+            <p className="text-muted-foreground">
+              Choose your billing cycle and upgrade today
+            </p>
+          </div>
 
-              {/* Selected Plan Display */}
-              <div className="flex items-baseline justify-center gap-1 my-3 sm:my-4">
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">{currentPlan.price}</span>
-                <span className="text-lg sm:text-xl text-muted-foreground">/ {currentPlan.period}</span>
+          {/* Pricing Cards */}
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {/* Monthly Plan */}
+            <Card 
+              className={`cursor-pointer transition-all border ${
+                selectedPlan === "monthly" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+              onClick={() => setSelectedPlan("monthly")}
+              data-testid="plan-monthly"
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Monthly</h3>
+                    <p className="text-sm text-muted-foreground">Perfect for testing</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    selectedPlan === "monthly" ? "border-primary bg-primary" : "border-border"
+                  }`}>
+                    {selectedPlan === "monthly" && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-2xl font-bold text-foreground">RM20</span>
+                    <span className="text-sm text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Billed monthly • Cancel anytime</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Annual Plan */}
+            <Card 
+              className={`cursor-pointer transition-all border relative ${
+                selectedPlan === "annual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+              onClick={() => setSelectedPlan("annual")}
+              data-testid="plan-annual"
+            >
+              {/* Popular badge */}
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1">
+                  Most Popular
+                </Badge>
               </div>
-              <CardDescription className="text-sm sm:text-base text-muted-foreground">
-                {currentPlan.description} • Cancel anytime
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                    <CheckIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+              
+              <CardContent className="p-6 pt-8">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Annual</h3>
+                    <p className="text-sm text-muted-foreground">Best value option</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    selectedPlan === "annual" ? "border-primary bg-primary" : "border-border"
+                  }`}>
+                    {selectedPlan === "annual" && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-2xl font-bold text-foreground">RM200</span>
+                    <span className="text-sm text-muted-foreground">/year</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-primary font-medium">Save RM40</span>
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">17% OFF</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Equivalent to RM16.67/month</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Features List */}
+          <div className="bg-muted/50 rounded-lg p-4 mb-8">
+            <h3 className="font-medium text-foreground mb-3 text-center">What's included:</h3>
+            <div className="space-y-2 max-w-md mx-auto">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-center justify-center gap-2 text-sm">
+                  <CheckIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-muted-foreground">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Payment Methods Card */}
-          <Card className="bg-card/80 backdrop-blur border border-border/50 shadow-2xl animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-lg sm:text-xl font-bold">Choose Payment Method</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Select your preferred payment option for Malaysia
-              </CardDescription>
+          <Card className="border border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-foreground text-center">
+                Choose Payment Method
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            
+            <CardContent className="p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
-                  <TabsTrigger value="card" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3" data-testid="tab-card">
-                    <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">Card</span>
-                    <span className="hidden sm:inline">Payment</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="fpx" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3" data-testid="tab-fpx">
-                    <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">FPX</span>
-                    <span className="hidden sm:inline">(Banks)</span>
-                  </TabsTrigger>
-                </TabsList>
+                {/* Simple Tab Selector */}
+                <div className="flex bg-muted rounded-lg p-1 mb-6">
+                  <button
+                    onClick={() => setActiveTab("card")}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+                      activeTab === "card"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    data-testid="tab-card"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm font-medium">Card</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("fpx")}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+                      activeTab === "fpx"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    data-testid="tab-fpx"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span className="text-sm font-medium">FPX</span>
+                  </button>
+                </div>
 
                 {/* Card Payment Tab */}
-                <TabsContent value="card" className="space-y-4 sm:space-y-6">
-                  <div className="text-center space-y-2 mb-4 sm:mb-6">
-                    <h3 className="text-sm sm:text-base font-semibold">Pay with Credit or Debit Card</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Secure payment powered by Stripe</p>
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-blue-800 dark:text-blue-200">
-                      💳 Secure card processing powered by Stripe
+                <TabsContent value="card" className="space-y-4">
+                  <div className="text-center space-y-3 mb-6">
+                    <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-foreground">Credit & Debit Cards</h3>
+                      <p className="text-sm text-muted-foreground">Secure payment powered by Stripe</p>
                     </div>
                   </div>
                   
-                  <div className="space-y-3 sm:space-y-4">
-                    <Button
-                      onClick={() => handlePlanSelect(selectedPlan)}
-                      disabled={isProcessing}
-                      className="w-full gradient-primary text-white hover:opacity-90 transition-all duration-300 hover:scale-105 text-sm sm:text-lg py-2.5 sm:py-3"
-                      data-testid="button-pay-card"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Processing...
-                        </div>
-                      ) : (
-                        `Continue to Secure Payment - ${currentPlan.price}`
-                      )}
-                    </Button>
+                  <Button
+                    onClick={() => handlePlanSelect(selectedPlan)}
+                    disabled={isProcessing}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-4 rounded-lg transition-all"
+                    data-testid="button-pay-card"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        <span>Continue to Payment - {currentPlan.price}</span>
+                      </div>
+                    )}
+                  </Button>
+                  
+                  {/* Trust indicators */}
+                  <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                      <span>SSL Encrypted</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Shield className="w-3 h-3" />
+                      <span>PCI Compliant</span>
+                    </div>
                   </div>
                 </TabsContent>
 
                 {/* FPX Payment Tab */}
-                <TabsContent value="fpx" className="space-y-4 sm:space-y-6">
-                  <div className="text-center space-y-2 mb-4 sm:mb-6">
-                    <h3 className="text-sm sm:text-base font-semibold">Pay with Malaysian Bank Account</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground">FPX available after going live - currently sandbox mode</p>
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200">
-                      🏦 FPX will be available when we move to live mode. For now, please use card payment.
+                <TabsContent value="fpx" className="space-y-4">
+                  <div className="text-center space-y-3 mb-6">
+                    <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-foreground">Malaysian Bank Transfer</h3>
+                      <p className="text-sm text-muted-foreground">Direct bank payment via FPX</p>
+                    </div>
+                    
+                    <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
+                      Available after going live - currently in sandbox mode
                     </div>
                   </div>
 
-                  <div className="space-y-4 sm:space-y-6 opacity-50">
-                    <div className="space-y-2 sm:space-y-3">
-                      <Label className="text-xs sm:text-sm font-medium">Malaysian Banks (Coming Soon)</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                        {malaysianBanks.map((bank) => (
-                          <div
-                            key={bank.id}
-                            className={`p-3 sm:p-4 border-2 rounded-lg flex items-center gap-2 sm:gap-3 text-left border-border ${bank.color} cursor-not-allowed`}
-                            data-testid={`bank-${bank.id}`}
-                          >
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-white border">
-                              <span className="text-sm sm:text-lg">{bank.logo}</span>
-                            </div>
-                            <span className="font-medium text-xs sm:text-sm">{bank.name}</span>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Simple Bank Grid */}
+                  <div className="opacity-50 pointer-events-none space-y-4">
+                    <div className="grid grid-cols-4 gap-3">
+                      {malaysianBanks.slice(0, 4).map((bank) => (
+                        <div
+                          key={bank.id}
+                          className="p-3 bg-muted rounded-lg text-center"
+                          data-testid={`bank-${bank.id}`}
+                        >
+                          <div className="text-lg mb-1">{bank.logo}</div>
+                          <span className="text-xs text-muted-foreground">{bank.name.split(' ')[0]}</span>
+                        </div>
+                      ))}
                     </div>
-
+                    
                     <Button
                       disabled
-                      className="w-full gradient-primary text-white opacity-50 cursor-not-allowed text-sm sm:text-lg py-2.5 sm:py-3"
+                      className="w-full bg-muted text-muted-foreground cursor-not-allowed"
                       data-testid="button-pay-fpx"
                     >
-                      FPX Coming Soon in Live Mode
+                      FPX Available in Live Mode
                     </Button>
                   </div>
                 </TabsContent>
               </Tabs>
 
-              {/* Security Notice */}
-              <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4 sm:mt-6 text-xs text-muted-foreground">
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="text-center">🔒 Secure payment • 💸 30-day money-back guarantee • ❌ Cancel anytime</span>
+              {/* Simple Security Notice */}
+              <div className="mt-8 pt-4 border-t border-border">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Shield className="w-4 h-4" />
+                    <span>Secure payment • 30-day guarantee • Cancel anytime</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
