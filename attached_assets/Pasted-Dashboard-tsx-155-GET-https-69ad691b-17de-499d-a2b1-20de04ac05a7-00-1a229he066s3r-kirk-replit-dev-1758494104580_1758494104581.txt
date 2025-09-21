@@ -1,0 +1,103 @@
+Dashboard.tsx:155  GET https://69ad691b-17de-499d-a2b1-20de04ac05a7-00-1a229he066s3r.kirk.replit.dev/api/recent-threads?limit=20 500 (Internal Server Error)
+fetchRecentThreads @ Dashboard.tsx:155
+await in fetchRecentThreads
+(anonymous) @ Dashboard.tsx:200
+commitHookEffectListMount @ chunk-UPELNCPK.js?v=5b55e3d5:16915
+commitPassiveMountOnFiber @ chunk-UPELNCPK.js?v=5b55e3d5:18156
+commitPassiveMountEffects_complete @ chunk-UPELNCPK.js?v=5b55e3d5:18129
+commitPassiveMountEffects_begin @ chunk-UPELNCPK.js?v=5b55e3d5:18119
+commitPassiveMountEffects @ chunk-UPELNCPK.js?v=5b55e3d5:18109
+flushPassiveEffectsImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19490
+flushPassiveEffects @ chunk-UPELNCPK.js?v=5b55e3d5:19447
+commitRootImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19416
+commitRoot @ chunk-UPELNCPK.js?v=5b55e3d5:19277
+performSyncWorkOnRoot @ chunk-UPELNCPK.js?v=5b55e3d5:18895
+flushSyncCallbacks @ chunk-UPELNCPK.js?v=5b55e3d5:9119
+(anonymous) @ chunk-UPELNCPK.js?v=5b55e3d5:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=5b55e3d5:555
+flush @ @tanstack_react-query.js?v=5b55e3d5:569
+batch @ @tanstack_react-query.js?v=5b55e3d5:587
+dispatch_fn @ @tanstack_react-query.js?v=5b55e3d5:996
+setData @ @tanstack_react-query.js?v=5b55e3d5:696
+onSuccess @ @tanstack_react-query.js?v=5b55e3d5:897
+resolve @ @tanstack_react-query.js?v=5b55e3d5:456
+Promise.then
+run @ @tanstack_react-query.js?v=5b55e3d5:498
+start @ @tanstack_react-query.js?v=5b55e3d5:536
+fetch @ @tanstack_react-query.js?v=5b55e3d5:926
+executeFetch_fn @ @tanstack_react-query.js?v=5b55e3d5:2211
+setOptions @ @tanstack_react-query.js?v=5b55e3d5:1955
+(anonymous) @ @tanstack_react-query.js?v=5b55e3d5:3032
+commitHookEffectListMount @ chunk-UPELNCPK.js?v=5b55e3d5:16915
+commitPassiveMountOnFiber @ chunk-UPELNCPK.js?v=5b55e3d5:18156
+commitPassiveMountEffects_complete @ chunk-UPELNCPK.js?v=5b55e3d5:18129
+commitPassiveMountEffects_begin @ chunk-UPELNCPK.js?v=5b55e3d5:18119
+commitPassiveMountEffects @ chunk-UPELNCPK.js?v=5b55e3d5:18109
+flushPassiveEffectsImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19490
+flushPassiveEffects @ chunk-UPELNCPK.js?v=5b55e3d5:19447
+(anonymous) @ chunk-UPELNCPK.js?v=5b55e3d5:19328
+workLoop @ chunk-UPELNCPK.js?v=5b55e3d5:197
+flushWork @ chunk-UPELNCPK.js?v=5b55e3d5:176
+performWorkUntilDeadline @ chunk-UPELNCPK.js?v=5b55e3d5:384Understand this error
+Dashboard.tsx:178 Error fetching recent threads: Error: Failed to fetch threads
+    at fetchRecentThreads (Dashboard.tsx:164:15)
+fetchRecentThreads @ Dashboard.tsx:178
+await in fetchRecentThreads
+(anonymous) @ Dashboard.tsx:200
+commitHookEffectListMount @ chunk-UPELNCPK.js?v=5b55e3d5:16915
+commitPassiveMountOnFiber @ chunk-UPELNCPK.js?v=5b55e3d5:18156
+commitPassiveMountEffects_complete @ chunk-UPELNCPK.js?v=5b55e3d5:18129
+commitPassiveMountEffects_begin @ chunk-UPELNCPK.js?v=5b55e3d5:18119
+commitPassiveMountEffects @ chunk-UPELNCPK.js?v=5b55e3d5:18109
+flushPassiveEffectsImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19490
+flushPassiveEffects @ chunk-UPELNCPK.js?v=5b55e3d5:19447
+commitRootImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19416
+commitRoot @ chunk-UPELNCPK.js?v=5b55e3d5:19277
+performSyncWorkOnRoot @ chunk-UPELNCPK.js?v=5b55e3d5:18895
+flushSyncCallbacks @ chunk-UPELNCPK.js?v=5b55e3d5:9119
+(anonymous) @ chunk-UPELNCPK.js?v=5b55e3d5:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=5b55e3d5:555
+flush @ @tanstack_react-query.js?v=5b55e3d5:569
+batch @ @tanstack_react-query.js?v=5b55e3d5:587
+dispatch_fn @ @tanstack_react-query.js?v=5b55e3d5:996
+setData @ @tanstack_react-query.js?v=5b55e3d5:696
+onSuccess @ @tanstack_react-query.js?v=5b55e3d5:897
+resolve @ @tanstack_react-query.js?v=5b55e3d5:456
+Promise.then
+run @ @tanstack_react-query.js?v=5b55e3d5:498
+start @ @tanstack_react-query.js?v=5b55e3d5:536
+fetch @ @tanstack_react-query.js?v=5b55e3d5:926
+executeFetch_fn @ @tanstack_react-query.js?v=5b55e3d5:2211
+setOptions @ @tanstack_react-query.js?v=5b55e3d5:1955
+(anonymous) @ @tanstack_react-query.js?v=5b55e3d5:3032
+commitHookEffectListMount @ chunk-UPELNCPK.js?v=5b55e3d5:16915
+commitPassiveMountOnFiber @ chunk-UPELNCPK.js?v=5b55e3d5:18156
+commitPassiveMountEffects_complete @ chunk-UPELNCPK.js?v=5b55e3d5:18129
+commitPassiveMountEffects_begin @ chunk-UPELNCPK.js?v=5b55e3d5:18119
+commitPassiveMountEffects @ chunk-UPELNCPK.js?v=5b55e3d5:18109
+flushPassiveEffectsImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19490
+flushPassiveEffects @ chunk-UPELNCPK.js?v=5b55e3d5:19447
+(anonymous) @ chunk-UPELNCPK.js?v=5b55e3d5:19328
+workLoop @ chunk-UPELNCPK.js?v=5b55e3d5:197
+flushWork @ chunk-UPELNCPK.js?v=5b55e3d5:176
+performWorkUntilDeadline @ chunk-UPELNCPK.js?v=5b55e3d5:384Understand this error
+Dashboard.tsx:155  GET https://69ad691b-17de-499d-a2b1-20de04ac05a7-00-1a229he066s3r.kirk.replit.dev/api/recent-threads?limit=20 500 (Internal Server Error)
+fetchRecentThreads @ Dashboard.tsx:155
+await in fetchRecentThreads
+(anonymous) @ Dashboard.tsx:200
+commitHookEffectListMount @ chunk-UPELNCPK.js?v=5b55e3d5:16915
+commitPassiveMountOnFiber @ chunk-UPELNCPK.js?v=5b55e3d5:18156
+commitPassiveMountEffects_complete @ chunk-UPELNCPK.js?v=5b55e3d5:18129
+commitPassiveMountEffects_begin @ chunk-UPELNCPK.js?v=5b55e3d5:18119
+commitPassiveMountEffects @ chunk-UPELNCPK.js?v=5b55e3d5:18109
+flushPassiveEffectsImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19490
+flushPassiveEffects @ chunk-UPELNCPK.js?v=5b55e3d5:19447
+commitRootImpl @ chunk-UPELNCPK.js?v=5b55e3d5:19416
+commitRoot @ chunk-UPELNCPK.js?v=5b55e3d5:19277
+performSyncWorkOnRoot @ chunk-UPELNCPK.js?v=5b55e3d5:18895
+flushSyncCallbacks @ chunk-UPELNCPK.js?v=5b55e3d5:9119
+(anonymous) @ chunk-UPELNCPK.js?v=5b55e3d5:18627Understand this error
+Dashboard.tsx:178 Error fetching recent threads: Error: Failed to fetch threads
+    at fetchRecentThreads (Dashboard.tsx:164:15)

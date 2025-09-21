@@ -289,6 +289,9 @@ export function registerRoutes(app: Express): Server {
   
   // Stripe Webhook Handler
   app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    console.log('\ud83d\udd17 WEBHOOK RECEIVED:', new Date().toISOString());
+    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
+    
     const sig = req.headers['stripe-signature'] as string;
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     
@@ -306,7 +309,9 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      console.log(`Processing webhook event: ${event.type}`);
+      console.log(`🚀 Processing webhook event: ${event.type}`);
+      console.log('Event ID:', event.id);
+      console.log('Event data preview:', JSON.stringify(event.data.object, null, 2).substring(0, 500) + '...');
       
       switch (event.type) {
         case 'customer.subscription.created':
@@ -314,11 +319,13 @@ export function registerRoutes(app: Express): Server {
           const subscription = event.data.object as Stripe.Subscription;
           const userId = subscription.metadata.userId;
           
-          console.log(`Subscription ${event.type} for user: ${userId}`);
+          console.log(`💳 Subscription ${event.type} for user: ${userId}`);
+          console.log('Subscription metadata:', JSON.stringify(subscription.metadata, null, 2));
+          console.log('Subscription status:', subscription.status);
           
           if (userId) {
-            const plan = subscription.items.data[0]?.price.recurring?.interval === 'year' ? 'annual' : 'monthly';
-            const status = subscription.status === 'active' ? 'active' : 'inactive';
+            const plan: 'monthly' | 'annual' = subscription.items.data[0]?.price.recurring?.interval === 'year' ? 'annual' : 'monthly';
+            const status: 'active' | 'inactive' | 'canceled' = subscription.status === 'active' ? 'active' : 'inactive';
             
             // Safely handle the current_period_end timestamp
             const periodEnd = (subscription as any).current_period_end;
@@ -326,9 +333,9 @@ export function registerRoutes(app: Express): Server {
               ? new Date(periodEnd * 1000) 
               : new Date(Date.now() + (plan === 'annual' ? 365 : 30) * 24 * 60 * 60 * 1000);
             
-            console.log(`Creating subscription: plan=${plan}, status=${status}, expires=${expiresAt.toISOString()}`);
+            console.log(`📝 Creating subscription: plan=${plan}, status=${status}, expires=${expiresAt.toISOString()}`);
             
-            await storage.upsertSubscription({
+            const subscriptionData = {
               userId,
               plan,
               status,
@@ -336,9 +343,16 @@ export function registerRoutes(app: Express): Server {
               stripeSubscriptionId: subscription.id,
               priceId: subscription.items.data[0]?.price.id,
               expiresAt,
-            });
+            };
+            console.log('Subscription data to save:', JSON.stringify(subscriptionData, null, 2));
             
-            console.log(`Subscription updated successfully for user ${userId}`);
+            const savedSubscription = await storage.upsertSubscription(subscriptionData);
+            
+            console.log(`✅ Subscription updated successfully for user ${userId}`);
+            console.log('Saved subscription:', JSON.stringify(savedSubscription, null, 2));
+          } else {
+            console.log('❌ No userId found in subscription metadata');
+            console.log('Available metadata keys:', Object.keys(subscription.metadata || {}));
           }
           break;
         }
@@ -381,7 +395,9 @@ export function registerRoutes(app: Express): Server {
           const session = event.data.object as Stripe.Checkout.Session;
           const userId = session.metadata?.userId;
           
-          console.log(`Checkout completed for user: ${userId}, mode: ${session.mode}, amount: ${session.amount_total}`);
+          console.log(`🛒 Checkout completed for user: ${userId}, mode: ${session.mode}, amount: ${session.amount_total}`);
+          console.log('Session metadata:', JSON.stringify(session.metadata, null, 2));
+          console.log('Customer ID:', session.customer);
           
           if (userId) {
             if (session.mode === 'payment') {
@@ -571,6 +587,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Create thread record in database
+      console.log(`💾 Creating thread for user: ${userId}, topic: ${topic.trim()}`);
       const thread = await storage.createThread({
         userId,
         topic: topic.trim(),
@@ -580,6 +597,7 @@ export function registerRoutes(app: Express): Server {
         wordCount: result.wordCount,
         tweetCount: result.tweetCount,
       });
+      console.log(`✅ Thread created successfully with ID: ${thread.id} for user: ${userId}`);
       
       res.json({
         thread: {
@@ -627,11 +645,14 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user!.id;
       const limit = parseInt(req.query.limit as string) || 10;
       
+      console.log(`🔍 Fetching threads for user: ${userId}, limit: ${limit}`);
+      
       if (limit > 50) {
         return res.status(400).json({ error: 'Limit cannot exceed 50' });
       }
       
       const threads = await storage.getThreadsByUserId(userId, limit);
+      console.log(`📊 Found ${threads.length} threads for user ${userId}`);
       
       res.json({
         threads: threads.map(thread => ({
