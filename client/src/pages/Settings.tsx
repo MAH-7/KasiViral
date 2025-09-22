@@ -133,12 +133,20 @@ export default function Settings(): JSX.Element {
   };
 
   // Format subscription data with correct field mappings
-  const memberSince = "January 2024"; // Would come from user registration date or subscription createdAt
   const isSubscriptionUser = subscription?.stripeSubscriptionId && subscription.stripeSubscriptionId.trim() !== "";
-  const paymentMethod = isSubscriptionUser ? "Card Payment (Recurring)" : "FPX - One-time Payment";
+  const hasEverPaid = subscription?.stripeCustomerId && subscription.stripeCustomerId.trim() !== "";
+  const isRegisteredOnly = !hasEverPaid; // User registered but never made any payment
+  const isFPXUser = hasEverPaid && !isSubscriptionUser; // Made payment but no recurring subscription
+  
+  const paymentMethod = isSubscriptionUser ? "Card Payment (Recurring)" : 
+                       isFPXUser ? "FPX - One-time Payment" : 
+                       "No payment method";
   const planName = subscription?.plan ? `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan` : "No Plan";
   const planStatus = subscription?.status === 'active' ? "Active" : "Inactive";
-  const expiryDate = subscription?.expiresAt && subscription.expiresAt !== null ? new Date(subscription.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "N/A";
+  // Only show expiry date for users who have actually paid (have stripeCustomerId)
+  const expiryDate = hasEverPaid && subscription?.expiresAt && subscription.expiresAt !== null ? 
+                     new Date(subscription.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 
+                     "N/A";
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
@@ -317,26 +325,6 @@ export default function Settings(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Member Since */}
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Member Since</p>
-                      <div className="text-sm text-muted-foreground">
-                        {subscriptionLoading ? (
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Loading...
-                          </div>
-                        ) : subscriptionError ? (
-                          "Failed to load"
-                        ) : memberSince}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Payment Method */}
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
@@ -393,7 +381,7 @@ export default function Settings(): JSX.Element {
                         </>
                       )}
                     </Button>
-                  ) : (
+                  ) : isFPXUser ? (
                     // FPX users get different options
                     <div className="space-y-3">
                       <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
@@ -417,6 +405,32 @@ export default function Settings(): JSX.Element {
                       >
                         <CreditCard className="w-4 h-4 mr-2" />
                         Upgrade or Renew Plan
+                      </Button>
+                    </div>
+                  ) : (
+                    // Registered users with no plan yet
+                    <div className="space-y-3">
+                      <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 mt-0.5 text-blue-500" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              No Active Plan
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Choose a plan to start using kasiviral's features.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105"
+                        onClick={() => window.location.href = '/billing'}
+                        data-testid="button-choose-plan"
+                      >
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Choose Your Plan
                       </Button>
                     </div>
                   )}

@@ -96,6 +96,7 @@ export function registerRoutes(app: Express): Server {
           plan: null,
           expiresAt: null,
           stripeSubscriptionId: null,
+          stripeCustomerId: null,
           isActive: false
         });
       }
@@ -105,6 +106,7 @@ export function registerRoutes(app: Express): Server {
         plan: subscription.plan,
         expiresAt: subscription.expiresAt,
         stripeSubscriptionId: subscription.stripeSubscriptionId,
+        stripeCustomerId: subscription.stripeCustomerId,
         isActive
       });
     } catch (error) {

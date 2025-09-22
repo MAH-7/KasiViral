@@ -7,6 +7,7 @@ interface SubscriptionStatus {
   plan: 'monthly' | 'annual' | null;
   expiresAt: string | null;
   stripeSubscriptionId: string | null;
+  stripeCustomerId: string | null;
   isActive: boolean;
 }
 
