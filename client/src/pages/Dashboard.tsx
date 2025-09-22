@@ -102,8 +102,8 @@ export default function Dashboard(): JSX.Element {
 
       const result = await response.json();
       
-      if (result.success && result.data) {
-        setGeneratedThread(result.data.thread);
+      if (result.thread) {
+        setGeneratedThread(result.thread.content);
         // Refresh recent threads to show the newly generated thread
         fetchRecentThreads();
       } else {
@@ -166,9 +166,9 @@ export default function Dashboard(): JSX.Element {
 
       const result = await response.json();
       
-      if (result.success && result.data) {
+      if (result.threads) {
         // Format the date for display
-        const formattedThreads = result.data.map((thread: any) => ({
+        const formattedThreads = result.threads.map((thread: any) => ({
           ...thread,
           createdAt: formatRelativeTime(new Date(thread.createdAt))
         }));

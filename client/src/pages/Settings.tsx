@@ -30,6 +30,7 @@ export default function Settings(): JSX.Element {
   const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
   const [email, setEmail] = useState(user?.email || "");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreatingPortalSession, setIsCreatingPortalSession] = useState(false);
 
   // Update form when user data changes
   useEffect(() => {
@@ -78,12 +79,57 @@ export default function Settings(): JSX.Element {
     }
   };
 
-  const handleManageBilling = () => {
-    // TODO: Implement billing management
-    toast({
-      title: "Coming soon",
-      description: "Billing management feature will be available soon.",
-    });
+  const handleManageBilling = async () => {
+    setIsCreatingPortalSession(true);
+    
+    try {
+      // Get auth token for API call
+      const { getSupabaseClient } = await import("@/lib/supabase");
+      const supabase = await getSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to manage your billing.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Call your existing portal session API
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create billing session');
+      }
+
+      const result = await response.json();
+      
+      if (result.url) {
+        // Redirect to Stripe Customer Portal
+        window.location.href = result.url;
+      } else {
+        throw new Error('No portal URL received');
+      }
+
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      toast({
+        title: "Unable to access billing portal",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingPortalSession(false);
+    }
   };
 
   // Format subscription data with correct field mappings
@@ -249,7 +295,7 @@ export default function Settings(): JSX.Element {
                     <CreditCard className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Current Plan</p>
-                      <p className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {subscriptionLoading ? (
                           <div className="flex items-center gap-2">
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -258,7 +304,7 @@ export default function Settings(): JSX.Element {
                         ) : subscriptionError ? (
                           "Failed to load"
                         ) : planName}
-                      </p>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -276,7 +322,7 @@ export default function Settings(): JSX.Element {
                     <Calendar className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Member Since</p>
-                      <p className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {subscriptionLoading ? (
                           <div className="flex items-center gap-2">
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -285,7 +331,7 @@ export default function Settings(): JSX.Element {
                         ) : subscriptionError ? (
                           "Failed to load"
                         ) : memberSince}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -307,7 +353,7 @@ export default function Settings(): JSX.Element {
                     <Clock className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">Expires On</p>
-                      <p className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {subscriptionLoading ? (
                           <div className="flex items-center gap-2">
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -316,7 +362,7 @@ export default function Settings(): JSX.Element {
                         ) : subscriptionError ? (
                           "Failed to load"
                         ) : expiryDate}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -327,12 +373,22 @@ export default function Settings(): JSX.Element {
                 <div className="space-y-3">
                   <Button
                     onClick={handleManageBilling}
+                    disabled={isCreatingPortalSession}
                     variant="outline"
-                    className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105"
+                    className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105 disabled:opacity-50"
                     data-testid="button-manage-billing"
                   >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Manage Billing
+                    {isCreatingPortalSession ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Opening Portal...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Manage Billing
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
