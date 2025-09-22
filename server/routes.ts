@@ -95,6 +95,7 @@ export function registerRoutes(app: Express): Server {
           status: 'inactive',
           plan: null,
           expiresAt: null,
+          stripeSubscriptionId: null,
           isActive: false
         });
       }
@@ -103,6 +104,7 @@ export function registerRoutes(app: Express): Server {
         status: subscription.status,
         plan: subscription.plan,
         expiresAt: subscription.expiresAt,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
         isActive
       });
     } catch (error) {
@@ -265,7 +267,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Customer Portal Session Creation
+  // Customer Portal Session Creation - Only for subscription users
   app.post("/api/create-portal-session", express.json(), verifyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
@@ -273,6 +275,14 @@ export function registerRoutes(app: Express): Server {
       
       if (!subscription?.stripeCustomerId) {
         return res.status(400).json({ error: 'No customer found' });
+      }
+      
+      // Only allow portal access for subscription users (not one-time FPX payments)
+      if (!subscription.stripeSubscriptionId) {
+        return res.status(403).json({ 
+          error: 'Customer Portal is only available for subscription users',
+          message: 'One-time payment users cannot access the Customer Portal'
+        });
       }
       
       const session = await stripe.billingPortal.sessions.create({
@@ -386,7 +396,7 @@ export function registerRoutes(app: Express): Server {
           if (userId) {
             if (session.mode === 'payment') {
               // For one-time payments (FPX), create a temporary active subscription
-              const plan = session.amount_total === 20000 ? 'monthly' : 'annual'; // 200 MYR = 20000 cents
+              const plan = session.amount_total === 2000 ? 'monthly' : 'annual'; // RM20 = 2000 sen, RM200 = 20000 sen
               const expiresAt = new Date();
               expiresAt.setMonth(expiresAt.getMonth() + (plan === 'annual' ? 12 : 1));
               
@@ -407,6 +417,20 @@ export function registerRoutes(app: Express): Server {
               console.log(`Subscription checkout completed - waiting for subscription.created webhook`);
             }
           }
+          break;
+        }
+        
+        case 'payment_intent.payment_failed': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          const userId = paymentIntent.metadata?.userId;
+          const failureReason = paymentIntent.last_payment_error?.message || 'Unknown error';
+          const failureCode = paymentIntent.last_payment_error?.code || 'unknown';
+          
+          console.log(`Payment failed for user: ${userId}, reason: ${failureReason}, code: ${failureCode}, amount: ${paymentIntent.amount}`);
+          
+          // Log additional details for analytics and customer support
+          console.log(`Payment failure details: paymentMethod=${paymentIntent.payment_method_types}, currency=${paymentIntent.currency}, status=${paymentIntent.status}`);
+          
           break;
         }
       }

@@ -134,7 +134,8 @@ export default function Settings(): JSX.Element {
 
   // Format subscription data with correct field mappings
   const memberSince = "January 2024"; // Would come from user registration date or subscription createdAt
-  const paymentMethod = "FPX - Maybank"; // This would come from payment provider
+  const isSubscriptionUser = subscription?.stripeSubscriptionId && subscription.stripeSubscriptionId.trim() !== "";
+  const paymentMethod = isSubscriptionUser ? "Card Payment (Recurring)" : "FPX - One-time Payment";
   const planName = subscription?.plan ? `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan` : "No Plan";
   const planStatus = subscription?.status === 'active' ? "Active" : "Inactive";
   const expiryDate = subscription?.expiresAt && subscription.expiresAt !== null ? new Date(subscription.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "N/A";
@@ -369,27 +370,56 @@ export default function Settings(): JSX.Element {
 
                 <Separator />
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Different for Subscription vs FPX users */}
                 <div className="space-y-3">
-                  <Button
-                    onClick={handleManageBilling}
-                    disabled={isCreatingPortalSession}
-                    variant="outline"
-                    className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105 disabled:opacity-50"
-                    data-testid="button-manage-billing"
-                  >
-                    {isCreatingPortalSession ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Opening Portal...
-                      </>
-                    ) : (
-                      <>
+                  {isSubscriptionUser ? (
+                    // Subscription users can access Customer Portal
+                    <Button
+                      onClick={handleManageBilling}
+                      disabled={isCreatingPortalSession}
+                      variant="outline"
+                      className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105 disabled:opacity-50"
+                      data-testid="button-manage-billing"
+                    >
+                      {isCreatingPortalSession ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Opening Portal...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Manage Billing
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    // FPX users get different options
+                    <div className="space-y-3">
+                      <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-blue-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              One-time Payment Plan
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              You purchased a {subscription?.plan} plan with FPX payment. No recurring billing to manage.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="w-full border-border/50 hover:bg-accent transition-all duration-300 hover:scale-105"
+                        onClick={() => window.location.href = '/billing'}
+                        data-testid="button-upgrade-plan"
+                      >
                         <CreditCard className="w-4 h-4 mr-2" />
-                        Manage Billing
-                      </>
-                    )}
-                  </Button>
+                        Upgrade or Renew Plan
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
