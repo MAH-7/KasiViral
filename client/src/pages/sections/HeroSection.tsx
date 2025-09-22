@@ -44,15 +44,13 @@ export const HeroSection = (): JSX.Element => {
           {/* Headline */}
           <div className="space-y-4 animate-fade-up">
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight">
-              <span className="text-gradient">Generate viral threads</span>
+              <span className="text-foreground">Staring at a blank post again?</span>
               <br />
-              <span className="text-foreground">in seconds</span>
+              <span className="text-gradient">Your AI content partner is here</span>
             </h1>
             
             <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              AI-powered generator, performance-scored templates, and viral
-              threads — ready to copy-paste across Facebook, LinkedIn, Twitter/X,
-              and Threads.
+              Stop struggling with "what should I post today?" KasiViral turns your random thoughts into viral threads that actually get engagement. In English or Bahasa Melayu. In seconds, not hours.
             </p>
           </div>
 
@@ -89,16 +87,16 @@ export const HeroSection = (): JSX.Element => {
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mt-12 animate-fade-up" style={{ animationDelay: "0.4s" }}>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">10K+</div>
-              <div className="text-sm text-muted-foreground">Threads Generated</div>
+              <div className="text-2xl font-bold text-primary">Zero</div>
+              <div className="text-sm text-muted-foreground">Writer's Block</div>
             </div>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">95%</div>
-              <div className="text-sm text-muted-foreground">Engagement Rate</div>
+              <div className="text-2xl font-bold text-primary">2 Languages</div>
+              <div className="text-sm text-muted-foreground">English & BM</div>
             </div>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">24/7</div>
-              <div className="text-sm text-muted-foreground">AI Powered</div>
+              <div className="text-2xl font-bold text-primary">30 Seconds</div>
+              <div className="text-sm text-muted-foreground">From Idea to Post</div>
             </div>
           </div>
         </div>

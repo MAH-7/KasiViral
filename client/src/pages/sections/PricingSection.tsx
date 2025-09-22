@@ -7,11 +7,11 @@ import { Link } from "wouter";
 
 export const PricingSection = (): JSX.Element => {
   const features = [
-    "Unlimited AI thread generation",
-    "Access to all viral templates",
-    "Thread history and favorites",
-    "All platform connections",
-    "Cancel anytime — no commitments",
+    "Never stare at a blank post again",
+    "Unlimited viral thread creation",
+    "Both English & Bahasa Melayu",
+    "Save your best threads forever",
+    "Cancel anytime — no drama, no questions",
   ];
 
   return (
@@ -19,10 +19,10 @@ export const PricingSection = (): JSX.Element => {
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 animate-fade-up">
-            Simple, <span className="text-gradient">transparent pricing</span>
+            Less than a <span className="text-gradient">nasi lemak per day</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            Get started with our powerful AI thread generator. No hidden fees, cancel anytime.
+            Stop letting great ideas die in your drafts folder. For less than your daily coffee, never run out of content again.
           </p>
         </div>
 

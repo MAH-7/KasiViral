@@ -9,16 +9,24 @@ import {
 export const FAQSection = (): JSX.Element => {
   const faqs = [
     {
-      question: "What is KasiViral?",
-      answer: "KasiViral helps you create viral social media threads using AI, proven templates, and a viral threads.",
+      question: "I'm not a natural writer. Will this actually help me?",
+      answer: "That's exactly who we built this for! You don't need to be a writer. Just tell KasiViral your basic idea - even if it's just 'tips for saving money' - and watch it transform into an engaging thread that sounds authentically you.",
     },
     {
-      question: "What do I need to sign up?",
-      answer: "Just your email address and a password (8+ characters).",
+      question: "How is this different from just using ChatGPT?",
+      answer: "ChatGPT gives you generic content. KasiViral is trained specifically on viral Malaysian and international threads, understands social media psychology, and creates content optimized for engagement - not just information.",
     },
     {
-      question: "Do you support direct posting?",
-      answer: "Not yet - KasiViral focuses on content creation; native scheduling is on our roadmap.",
+      question: "Can I really create content in Bahasa Melayu?",
+      answer: "Absolutely! KasiViral speaks natural Malaysian BM - not the stiff, textbook version. It understands our slang, cultural references, and how Malaysians actually communicate on social media.",
+    },
+    {
+      question: "What if I don't like what it generates?",
+      answer: "Hit regenerate! Every click gives you a completely different angle, tone, and style for the same topic. Think of it as having 5 different copywriters brainstorming for you.",
+    },
+    {
+      question: "Is RM20/month worth it for a content tool?",
+      answer: "Compare it to hiring a content writer (RM500+ per month) or spending 2-3 hours daily struggling with posts. KasiViral pays for itself if it saves you just 1 hour per week. Plus, you can cancel anytime.",
     },
   ];
 
@@ -33,10 +41,10 @@ export const FAQSection = (): JSX.Element => {
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16 animate-fade-up">
           <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
-            <span className="text-gradient">Frequently Asked Questions</span>
+            <span className="text-gradient">Still wondering if this is for you?</span>
           </h2>
           <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Everything you need to know about KasiViral
+            These are the real questions aspiring creators ask us
           </p>
         </div>
 

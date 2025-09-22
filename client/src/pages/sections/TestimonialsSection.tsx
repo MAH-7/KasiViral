@@ -4,21 +4,21 @@ import { Card, CardContent } from "@/components/ui/card";
 export const TestimonialsSection = (): JSX.Element => {
   const features = [
     {
+      emoji: "🧠",
+      title: "Your Creative Breakthrough",
+      description:
+        "Just type what's on your mind. Our AI turns your scattered thoughts into compelling stories that people actually want to read and share.",
+    },
+    {
+      emoji: "🇲🇾",
+      title: "Speak Your Language",
+      description:
+        "Create in perfect English or natural Bahasa Melayu. Finally, an AI that gets Malaysian content creators and our unique way of storytelling.",
+    },
+    {
       emoji: "⚡",
-      title: "AI-Powered Generator",
-      description:
-        "Creates viral social media threads using OpenAI GPT-5 with fallback generation.",
-    },
-    {
-      emoji: "📚",
-      title: "Template Library",
-      description:
-        "15+ high-performing thread templates with engagement scores and categories.",
-    },
-    {
-      emoji: "🌐",
-      title: "Multi-Platform Support",
-      description: "Works for Facebook, LinkedIn, Twitter/X, and Threads.",
+      title: "Beat the Blank Page Forever",
+      description: "No more spending hours wondering 'what should I post?' Get 3 different thread lengths ready to copy-paste in under 30 seconds.",
     },
   ];
 
@@ -33,10 +33,10 @@ export const TestimonialsSection = (): JSX.Element => {
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16 animate-fade-up">
           <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
-            Why Creators Choose <span className="text-gradient">KasiViral</span>
+            Built for creators who are <span className="text-gradient">tired of staring at blank screens</span>
           </h2>
           <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Streamlined from idea to publish across all major social platforms.
+            You have ideas. You want to share them. But turning thoughts into engaging posts? That's where most creators get stuck. Not anymore.
           </p>
         </div>
 
