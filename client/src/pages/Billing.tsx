@@ -69,9 +69,9 @@ export default function Billing(): JSX.Element {
       const configResponse = await fetch('/api/stripe/config');
       const config = await configResponse.json();
       
-      const priceId = plan === 'monthly' 
-        ? config.pricing.monthly.priceId 
-        : config.pricing.annual.priceId;
+      const priceId = mode === 'subscription' 
+        ? (plan === 'monthly' ? config.pricing.subscription.monthly.priceId : config.pricing.subscription.annual.priceId)
+        : (plan === 'monthly' ? config.pricing.oneTime.monthly.priceId : config.pricing.oneTime.annual.priceId);
 
       if (!priceId) {
         // Fallback to subscribe page for manual setup
@@ -285,43 +285,54 @@ export default function Billing(): JSX.Element {
                 {/* Card Payment Tab */}
                 <TabsContent value="card" className="space-y-4">
                   <div className="text-center space-y-3 mb-6">
-                    <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                      <CreditCard className="w-6 h-6 text-primary" />
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                      <CreditCard className="w-8 h-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-foreground">Credit & Debit Cards</h3>
-                      <p className="text-sm text-muted-foreground">Secure payment processing coming soon</p>
+                      <h3 className="text-xl font-semibold text-foreground">Credit & Debit Cards</h3>
+                      <p className="text-sm text-muted-foreground">Secure recurring subscription payments</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/20">
+                    <div className="flex items-center justify-center gap-2 text-sm text-foreground font-medium">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span>Best for recurring subscriptions • Auto-renewal • Cancel anytime</span>
                     </div>
                   </div>
                   
                   <Button
                     onClick={() => handlePlanSelect(selectedPlan)}
                     disabled={isProcessing}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-4 rounded-lg transition-all"
+                    className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground font-semibold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
                     data-testid="button-pay-card"
                   >
                     {isProcessing ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        <span>Processing...</span>
+                        <span>Redirecting to Checkout...</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        <span>Continue to Payment - {currentPlan.price}</span>
+                        <CreditCard className="w-5 h-5" />
+                        <span>Pay {currentPlan.price} - Continue to Stripe</span>
                       </div>
                     )}
                   </Button>
                   
                   {/* Trust indicators */}
-                  <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                      <span>SSL Encrypted</span>
+                  <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <span>256-bit SSL</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Shield className="w-3 h-3" />
-                      <span>PCI Compliant</span>
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-3 h-3 text-green-500" />
+                      <span>PCI DSS Level 1</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span>Stripe Secure</span>
                     </div>
                   </div>
                 </TabsContent>
@@ -329,51 +340,75 @@ export default function Billing(): JSX.Element {
                 {/* FPX Payment Tab */}
                 <TabsContent value="fpx" className="space-y-4">
                   <div className="text-center space-y-3 mb-6">
-                    <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center">
-                      <Building2 className="w-6 h-6 text-muted-foreground" />
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                      <Building2 className="w-8 h-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-foreground">Malaysian Bank Transfer</h3>
-                      <p className="text-sm text-muted-foreground">Direct bank payment via FPX</p>
-                    </div>
-                    
-                    <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                      Available after going live - currently in sandbox mode
+                      <h3 className="text-xl font-semibold text-foreground">Malaysian Online Banking</h3>
+                      <p className="text-sm text-muted-foreground">One-time payment via FPX • All major banks</p>
                     </div>
                   </div>
-
-                  {/* Simple Bank Grid */}
-                  <div className="opacity-50 pointer-events-none space-y-4">
-                    <div className="grid grid-cols-4 gap-3">
-                      {malaysianBanks.slice(0, 4).map((bank) => (
-                        <div
-                          key={bank.id}
-                          className="p-3 bg-muted rounded-lg text-center"
-                          data-testid={`bank-${bank.id}`}
-                        >
-                          <div className="text-lg mb-1">{bank.logo}</div>
-                          <span className="text-xs text-muted-foreground">{bank.name.split(' ')[0]}</span>
-                        </div>
-                      ))}
+                  
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/20">
+                    <div className="flex items-center justify-center gap-2 text-sm text-foreground font-medium">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span>Perfect for one-time purchases • Instant activation • No recurring charges</span>
                     </div>
-                    
-                    <Button
-                      disabled
-                      className="w-full bg-muted text-muted-foreground cursor-not-allowed"
-                      data-testid="button-pay-fpx"
-                    >
-                      FPX Available in Live Mode
-                    </Button>
+                  </div>
+                  
+                  <Button
+                    onClick={() => handlePlanSelect(selectedPlan)}
+                    disabled={isProcessing}
+                    className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground font-semibold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                    data-testid="button-pay-fpx"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <span>Redirecting to Checkout...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        <span>Pay {currentPlan.price} - Continue to Stripe</span>
+                      </div>
+                    )}
+                  </Button>
+                  
+                  {/* Trust indicators */}
+                  <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <span>Instant Transfer</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-3 h-3 text-green-500" />
+                      <span>Bank Secure</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <span>FPX Certified</span>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
 
-              {/* Simple Security Notice */}
-              <div className="mt-8 pt-4 border-t border-border">
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Shield className="w-4 h-4" />
-                    <span>Secure payment • 30-day guarantee • Cancel anytime</span>
+              {/* Enhanced Security Notice */}
+              <div className="mt-8 pt-6 border-t border-border">
+                <div className="bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl p-6 border border-border/50">
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
+                      <Shield className="w-5 h-5 text-green-600" />
+                      <span>Powered by Stripe • Bank-level Security</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+                      <span>🔒 Secure encrypted payment</span>
+                      <span>⚡ Instant activation</span>
+                      <span>🚫 Cancel anytime</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground/80 max-w-md mx-auto">
+                      Your payment information is processed securely. We don't store your payment details.
+                    </p>
                   </div>
                 </div>
               </div>

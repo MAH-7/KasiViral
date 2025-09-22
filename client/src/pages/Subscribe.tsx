@@ -120,9 +120,9 @@ export default function Subscribe() {
         setStripeConfig(config);
 
         // Create checkout session
-        const priceId = plan === 'monthly' 
-          ? config.pricing.monthly.priceId 
-          : config.pricing.annual.priceId;
+        const priceId = mode === 'subscription' 
+          ? (plan === 'monthly' ? config.pricing.subscription.monthly.priceId : config.pricing.subscription.annual.priceId)
+          : (plan === 'monthly' ? config.pricing.oneTime.monthly.priceId : config.pricing.oneTime.annual.priceId);
 
         if (!priceId) {
           throw new Error('Price ID not configured. Please set up products in Stripe Dashboard.');

@@ -423,20 +423,39 @@ export function registerRoutes(app: Express): Server {
     res.json({
       publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY,
       pricing: {
-        monthly: {
-          amount: 20,
-          currency: 'myr',
-          displayAmount: 'RM20',
-          interval: 'month',
-          priceId: 'price_1S9u3U1oqMxvtQmcBZiPWhdo', // RM20 monthly price ID
+        subscription: {  // Card payments - recurring
+          monthly: {
+            amount: 20,
+            currency: 'myr',
+            displayAmount: 'RM20',
+            interval: 'month',
+            priceId: 'price_1S9u3U1oqMxvtQmcBZiPWhdo', // existing recurring
+          },
+          annual: {
+            amount: 200,
+            currency: 'myr', 
+            displayAmount: 'RM200',
+            interval: 'year',
+            savings: 'RM40',
+            priceId: 'price_1S9u431oqMxvtQmcvbMHD1ay', // existing recurring
+          },
         },
-        annual: {
-          amount: 200,
-          currency: 'myr', 
-          displayAmount: 'RM200',
-          interval: 'year',
-          savings: 'RM40',
-          priceId: 'price_1S9u431oqMxvtQmcvbMHD1ay', // RM200 annual price ID
+        oneTime: {      // FPX payments - one-time
+          monthly: {
+            amount: 20,
+            currency: 'myr',
+            displayAmount: 'RM20',
+            interval: 'month',
+            priceId: 'price_1SA53j1oqMxvtQmcD30iyHt0', // new one-time
+          },
+          annual: {
+            amount: 200,
+            currency: 'myr',
+            displayAmount: 'RM200', 
+            interval: 'year',
+            savings: 'RM40',
+            priceId: 'price_1SA53u1oqMxvtQmcBUVtoO0n', // new one-time
+          },
         },
       },
     });
