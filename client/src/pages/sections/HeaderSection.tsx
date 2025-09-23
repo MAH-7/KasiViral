@@ -9,7 +9,7 @@ export const HeaderSection = (): JSX.Element => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const { isLoggedIn, user, logout } = useAuth();
-  const { clearSubscriptionCache } = useSubscription();
+  const { clearSubscriptionCache, isActive: hasActiveSubscription } = useSubscription();
 
   // Different navigation items based on login state
   const guestNavigationItems = [
@@ -47,6 +47,15 @@ export const HeaderSection = (): JSX.Element => {
     logout();
     setIsMobileMenuOpen(false);
   };
+
+  // Determine where "Get Started" should redirect
+  const getStartedHref = isLoggedIn 
+    ? (hasActiveSubscription ? '/dashboard' : '/billing')
+    : '/login';
+
+  const getStartedText = isLoggedIn 
+    ? (hasActiveSubscription ? 'Dashboard' : 'Complete Setup') 
+    : 'Get Started';
 
   return (
     <header className="sticky top-0 z-50 w-full glass-effect border-b">
@@ -133,7 +142,7 @@ export const HeaderSection = (): JSX.Element => {
                   asChild
                   data-testid="button-get-started"
                 >
-                  <Link href="/login">Get Started</Link>
+                  <Link href={getStartedHref}>{getStartedText}</Link>
                 </Button>
               </>
             )}
@@ -219,7 +228,7 @@ export const HeaderSection = (): JSX.Element => {
                       asChild
                       data-testid="mobile-button-get-started"
                     >
-                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
+                      <Link href={getStartedHref} onClick={() => setIsMobileMenuOpen(false)}>{getStartedText}</Link>
                     </Button>
                   </>
                 )}

@@ -27,7 +27,7 @@ export async function handlePostAuthRedirect(
         
         if (response.ok) {
           const subscriptionData = await response.json();
-          if (subscriptionData.isActive) {
+          if (subscriptionData.isActive || subscriptionData.status === 'active') {
             navigate("/dashboard");
           } else {
             navigate("/billing");

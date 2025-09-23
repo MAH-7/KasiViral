@@ -2,6 +2,8 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const heroImages = [
   {
@@ -31,6 +33,14 @@ const heroImages = [
 ];
 
 export const HeroSection = (): JSX.Element => {
+  const { isLoggedIn } = useAuth();
+  const { isActive: hasActiveSubscription } = useSubscription();
+
+  // Determine where "Get Started" should redirect
+  const getStartedHref = isLoggedIn 
+    ? (hasActiveSubscription ? '/dashboard' : '/billing')
+    : '/login';
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30" id="hero">
       {/* Background Elements */}
@@ -62,9 +72,9 @@ export const HeroSection = (): JSX.Element => {
               asChild
               data-testid="button-hero-get-started"
             >
-              <Link href="/login">
+              <Link href={getStartedHref}>
                 <span className="flex items-center gap-2">
-                  Get Started
+                  {isLoggedIn ? (hasActiveSubscription ? 'Go to Dashboard' : 'Complete Subscription') : 'Get Started'}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>

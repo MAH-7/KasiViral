@@ -4,8 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export const PricingSection = (): JSX.Element => {
+  const { isLoggedIn } = useAuth();
+  const { isActive: hasActiveSubscription } = useSubscription();
+
+  // Determine where "Get Started Now" should redirect
+  const getStartedHref = isLoggedIn 
+    ? (hasActiveSubscription ? '/dashboard' : '/billing')
+    : '/login';
+
+  const getStartedText = isLoggedIn 
+    ? (hasActiveSubscription ? 'Go to Dashboard' : 'Complete Subscription') 
+    : 'Get Started Now';
+
   const features = [
     "Never stare at a blank post again",
     "Unlimited viral thread creation",
@@ -66,7 +80,7 @@ export const PricingSection = (): JSX.Element => {
                 asChild
                 data-testid="button-pricing-get-started"
               >
-                <Link href="/login">Get Started Now</Link>
+                <Link href={getStartedHref}>{getStartedText}</Link>
               </Button>
             </CardContent>
           </Card>

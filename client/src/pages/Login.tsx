@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,23 @@ export default function Login(): JSX.Element {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [, navigate] = useLocation();
-  const { login } = useAuth();
+  const { login, isLoggedIn, isLoading: authLoading } = useAuth();
+
+  // Check if user is already logged in when component mounts
+  useEffect(() => {
+    if (!authLoading) {
+      if (isLoggedIn) {
+        // User is already logged in, redirect them to appropriate page
+        handlePostAuthRedirect(navigate, () => setIsCheckingAuth(false), 0);
+      } else {
+        // User not logged in, show login form
+        setIsCheckingAuth(false);
+      }
+    }
+  }, [isLoggedIn, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +49,18 @@ export default function Login(): JSX.Element {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking authentication status
+  if (authLoading || isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/30">
