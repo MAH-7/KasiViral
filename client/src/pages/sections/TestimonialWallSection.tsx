@@ -1,36 +1,39 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const TestimonialWallSection = (): JSX.Element => {
+  const { t } = useLanguage();
+  
   const features = [
     {
-      title: "Performance content",
-      description: "Templates include engagement scores based on real data",
+      title: t("features.performance.title"),
+      description: t("features.performance.description"),
       icon: "📊"
     },
     {
-      title: "Topic suggestions",
-      description: "Pre-populated ideas for instant inspiration and creation",
+      title: t("features.topics.title"),
+      description: t("features.topics.description"),
       icon: "💡"
     },
     {
-      title: "Proven viral formats",
-      description: "Based on actual high-performing posts across platforms",
+      title: t("features.viral.title"),
+      description: t("features.viral.description"),
       icon: "🔥"
     },
     {
-      title: "Anonymous usage",
-      description: "Start instantly without registration or personal information",
+      title: t("features.anonymous.title"),
+      description: t("features.anonymous.description"),
       icon: "🔒"
     },
     {
-      title: "One-click copy & paste",
-      description: "Content is ready to post immediately, no editing required",
+      title: t("features.copy.title"),
+      description: t("features.copy.description"),
       icon: "📋"
     },
     {
-      title: "Multi-platform ready",
-      description: "Optimized for Facebook, LinkedIn, Twitter/X, and Threads",
+      title: t("features.multiplatform.title"),
+      description: t("features.multiplatform.description"),
       icon: "🌍"
     },
   ];
@@ -46,10 +49,10 @@ export const TestimonialWallSection = (): JSX.Element => {
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16 animate-fade-up">
           <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
-            Why creators choose <span className="text-gradient">KasiViral</span>
+            {t("features.headline")} <span className="text-gradient">KasiViral</span>
           </h2>
           <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Everything you need to create viral content, nothing you don't.
+            {t("features.subtitle")}
           </p>
         </div>
 

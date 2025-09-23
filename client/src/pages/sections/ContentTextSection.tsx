@@ -1,20 +1,22 @@
 import { PlayIcon } from "lucide-react";
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const ContentTextSection = (): JSX.Element => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const { t } = useLanguage();
+  
   return (
     <section className="section-padding" id="demo">
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16 animate-fade-up">
           <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6">
-            From <span className="text-gradient">"I have nothing to post"</span>{" "}
-            to viral content
+            {t('demo.headline1')} <span className="text-gradient">{t('demo.headline2')}</span>{" "}
+            {t('demo.headline3')}
           </h2>
           <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Watch a real aspiring creator transform a simple topic into a thread
-            that gets shared, liked, and remembered
+            {t('demo.subtitle')}
           </p>
         </div>
 

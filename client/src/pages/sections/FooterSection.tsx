@@ -1,12 +1,14 @@
 import React from "react";
 import { Link } from "wouter";
-
-const footerLinks = [
-  { text: "Terms of Service", href: "/terms" },
-  { text: "Privacy Policy", href: "#" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const FooterSection = (): JSX.Element => {
+  const { t } = useLanguage();
+
+  const footerLinks = [
+    { text: t('footer.termsOfService'), href: "/terms" },
+    { text: t('footer.privacyPolicy'), href: "#" },
+  ];
   return (
     <footer className="border-t bg-muted/30">
       <div className="container-custom py-8 lg:py-12">
@@ -45,7 +47,7 @@ export const FooterSection = (): JSX.Element => {
         
         <div className="mt-6 lg:mt-8 pt-6 border-t text-center">
           <p className="text-sm text-muted-foreground">
-            © 2025 KasiViral. All rights reserved.
+            {t('footer.copyright')}
           </p>
         </div>
       </div>

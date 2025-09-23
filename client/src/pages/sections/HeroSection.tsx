@@ -4,6 +4,7 @@ import { ArrowRight, Play } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const heroImages = [
   {
@@ -35,6 +36,7 @@ const heroImages = [
 export const HeroSection = (): JSX.Element => {
   const { isLoggedIn } = useAuth();
   const { isActive: hasActiveSubscription } = useSubscription();
+  const { t } = useLanguage();
 
   // Determine where "Get Started" should redirect
   const getStartedHref = isLoggedIn 
@@ -54,13 +56,13 @@ export const HeroSection = (): JSX.Element => {
           {/* Headline */}
           <div className="space-y-4 animate-fade-up">
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight">
-              <span className="text-foreground">Staring at a blank post again?</span>
+              <span className="text-foreground">{t('hero.headline1')}</span>
               <br />
-              <span className="text-gradient">Your AI content partner is here</span>
+              <span className="text-gradient">{t('hero.headline2')}</span>
             </h1>
             
             <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-              Stop struggling with "what should I post today?" KasiViral turns your random thoughts into viral threads that actually get engagement. In English or Bahasa Melayu. In seconds, not hours.
+              {t('hero.subtitle')}
             </p>
           </div>
 
@@ -74,7 +76,7 @@ export const HeroSection = (): JSX.Element => {
             >
               <Link href={getStartedHref}>
                 <span className="flex items-center gap-2">
-                  {isLoggedIn ? (hasActiveSubscription ? 'Go to Dashboard' : 'Complete Subscription') : 'Get Started'}
+                  {isLoggedIn ? (hasActiveSubscription ? t('hero.goToDashboard') : t('hero.completeSubscription')) : t('hero.getStarted')}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
@@ -89,7 +91,7 @@ export const HeroSection = (): JSX.Element => {
             >
               <a href="#features" className="flex items-center gap-2">
                 <Play className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                View Features
+                {t('hero.viewFeatures')}
               </a>
             </Button>
           </div>
@@ -97,16 +99,16 @@ export const HeroSection = (): JSX.Element => {
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mt-12 animate-fade-up" style={{ animationDelay: "0.4s" }}>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">Zero</div>
-              <div className="text-sm text-muted-foreground">Writer's Block</div>
+              <div className="text-2xl font-bold text-primary">{t('hero.feature1Title')}</div>
+              <div className="text-sm text-muted-foreground">{t('hero.feature1Subtitle')}</div>
             </div>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">2 Languages</div>
-              <div className="text-sm text-muted-foreground">English & BM</div>
+              <div className="text-2xl font-bold text-primary">{t('hero.feature2Title')}</div>
+              <div className="text-sm text-muted-foreground">{t('hero.feature2Subtitle')}</div>
             </div>
             <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">30 Seconds</div>
-              <div className="text-sm text-muted-foreground">From Idea to Post</div>
+              <div className="text-2xl font-bold text-primary">{t('hero.feature3Title')}</div>
+              <div className="text-sm text-muted-foreground">{t('hero.feature3Subtitle')}</div>
             </div>
           </div>
         </div>

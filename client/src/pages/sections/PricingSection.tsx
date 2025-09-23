@@ -6,10 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const PricingSection = (): JSX.Element => {
   const { isLoggedIn } = useAuth();
   const { isActive: hasActiveSubscription } = useSubscription();
+  const { t } = useLanguage();
 
   // Determine where "Get Started Now" should redirect
   const getStartedHref = isLoggedIn 
@@ -17,15 +19,15 @@ export const PricingSection = (): JSX.Element => {
     : '/login';
 
   const getStartedText = isLoggedIn 
-    ? (hasActiveSubscription ? 'Go to Dashboard' : 'Complete Subscription') 
-    : 'Get Started Now';
+    ? (hasActiveSubscription ? t('pricing.goToDashboard') : t('pricing.completeSubscription')) 
+    : t('pricing.getStartedNow');
 
   const features = [
-    "Never stare at a blank post again",
-    "Unlimited viral thread creation",
-    "Both English & Bahasa Melayu",
-    "Save your best threads forever",
-    "Cancel anytime — no drama, no questions",
+    t('pricing.feature1'),
+    t('pricing.feature2'),
+    t('pricing.feature3'),
+    t('pricing.feature4'),
+    t('pricing.feature5'),
   ];
 
   return (
@@ -33,10 +35,10 @@ export const PricingSection = (): JSX.Element => {
       <div className="container-custom">
         <div className="text-center mb-12 lg:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 animate-fade-up">
-            Less than a <span className="text-gradient">nasi lemak per day</span>
+            {t('pricing.headline')} <span className="text-gradient">{t('pricing.headlineHighlight')}</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            Stop letting great ideas die in your drafts folder. For less than your daily coffee, never run out of content again.
+            {t('pricing.subtitle')}
           </p>
         </div>
 
@@ -46,12 +48,12 @@ export const PricingSection = (): JSX.Element => {
               <div className="text-center space-y-4 mb-8">
                 <div className="flex justify-center">
                   <Badge className="gradient-secondary text-white px-4 py-1">
-                    MOST POPULAR
+                    {t('pricing.mostPopular')}
                   </Badge>
                 </div>
                 
                 <h3 className="text-2xl font-bold">
-                  KasiViral PRO
+                  {t('pricing.productName')}
                 </h3>
 
                 <div className="flex items-baseline justify-center gap-1">
@@ -59,7 +61,7 @@ export const PricingSection = (): JSX.Element => {
                     RM20
                   </span>
                   <span className="text-xl text-muted-foreground">
-                    / month
+                    {t('pricing.perMonth')}
                   </span>
                 </div>
               </div>
@@ -88,7 +90,7 @@ export const PricingSection = (): JSX.Element => {
 
         <div className="text-center mt-8 animate-fade-up" style={{ animationDelay: "0.3s" }}>
           <p className="text-sm text-muted-foreground">
-            🔒 Secure payment • 💸 30-day money-back guarantee • ❌ Cancel anytime
+            {t('pricing.guarantee')}
           </p>
         </div>
       </div>

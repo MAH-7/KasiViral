@@ -4,22 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, HelpCircle, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const HeaderSection = (): JSX.Element => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const { isLoggedIn, user, logout } = useAuth();
   const { clearSubscriptionCache, isActive: hasActiveSubscription } = useSubscription();
+  const { t } = useLanguage();
 
   // Different navigation items based on login state
   const guestNavigationItems = [
-    { label: "Features", href: "/#features", id: "features" },
-    { label: "Pricing", href: "/#pricing", id: "pricing" },
-    { label: "FAQ", href: "/#faq", id: "faq" },
+    { label: t('nav.features'), href: "/#features", id: "features" },
+    { label: t('nav.pricing'), href: "/#pricing", id: "pricing" },
+    { label: t('nav.faq'), href: "/#faq", id: "faq" },
   ];
 
   const loggedInNavigationItems = [
-    { label: "Thread Writer", href: "/dashboard", id: "thread-writer" },
+    { label: t('nav.threadWriter'), href: "/dashboard", id: "thread-writer" },
   ];
 
   const navigationItems = isLoggedIn ? loggedInNavigationItems : guestNavigationItems;
@@ -54,8 +57,8 @@ export const HeaderSection = (): JSX.Element => {
     : '/login';
 
   const getStartedText = isLoggedIn 
-    ? (hasActiveSubscription ? 'Dashboard' : 'Complete Setup') 
-    : 'Get Started';
+    ? (hasActiveSubscription ? t('nav.dashboard') : t('nav.completeSetup')) 
+    : t('nav.getStarted');
 
   return (
     <header className="sticky top-0 z-50 w-full glass-effect border-b">
@@ -79,7 +82,7 @@ export const HeaderSection = (): JSX.Element => {
               <Link key={index} href={item.href}>
                 <span
                   className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors duration-200 hover:scale-105 cursor-pointer"
-                  data-testid={`nav-link-${item.label.toLowerCase()}`}
+                  data-testid={`nav-link-${item.id}`}
                   onClick={(e) => handleSectionClick(e, item.id)}
                 >
                   {item.label}
@@ -90,6 +93,7 @@ export const HeaderSection = (): JSX.Element => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-4">
+            <LanguageToggle />
             {isLoggedIn ? (
               <>
                 <Button 
@@ -99,7 +103,7 @@ export const HeaderSection = (): JSX.Element => {
                   data-testid="button-help"
                 >
                   <HelpCircle className="w-4 h-4 mr-2" />
-                  Help
+                  {t('nav.help')}
                 </Button>
                 <div className="flex items-center space-x-2">
                   <Button 
@@ -121,7 +125,7 @@ export const HeaderSection = (): JSX.Element => {
                     onClick={handleLogout}
                     data-testid="button-logout"
                   >
-                    Logout
+                    {t('nav.logout')}
                   </Button>
                 </div>
               </>
@@ -134,7 +138,7 @@ export const HeaderSection = (): JSX.Element => {
                   asChild
                   data-testid="button-login"
                 >
-                  <Link href="/login">Login</Link>
+                  <Link href="/login">{t('nav.login')}</Link>
                 </Button>
                 <Button 
                   size="sm"
@@ -176,13 +180,16 @@ export const HeaderSection = (): JSX.Element => {
                   <span
                     className="block px-3 py-2 text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors cursor-pointer"
                     onClick={(e) => handleSectionClick(e, item.id)}
-                    data-testid={`mobile-nav-link-${item.label.toLowerCase()}`}
+                    data-testid={`mobile-nav-link-${item.id}`}
                   >
                     {item.label}
                   </span>
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 pt-4 px-3">
+                <div className="pb-2 border-b border-border/20">
+                  <LanguageToggle />
+                </div>
                 {isLoggedIn ? (
                   <>
                     <Button 
@@ -191,7 +198,7 @@ export const HeaderSection = (): JSX.Element => {
                       data-testid="mobile-button-help"
                     >
                       <HelpCircle className="w-4 h-4 mr-2" />
-                      Help
+                      {t('nav.help')}
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -210,7 +217,7 @@ export const HeaderSection = (): JSX.Element => {
                       onClick={handleLogout}
                       data-testid="mobile-button-logout"
                     >
-                      Logout
+                      {t('nav.logout')}
                     </Button>
                   </>
                 ) : (
@@ -221,7 +228,7 @@ export const HeaderSection = (): JSX.Element => {
                       asChild
                       data-testid="mobile-button-login"
                     >
-                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.login')}</Link>
                     </Button>
                     <Button 
                       className="gradient-primary text-white justify-start"
